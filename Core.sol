@@ -78,6 +78,7 @@ contract BirdBase is Random, Achievments{
         
         uint hp;
         uint strength;
+        uint strengthUpgr;
         uint protection;
         
         uint spec1;
@@ -125,7 +126,7 @@ contract BirdBase is Random, Achievments{
     function bornBird (address _user) internal returns(uint){
         Bird memory newBird;
         newBird.id = birdIndex++;
-        newBird.birdType = rand(0,54, newBird.id);
+        newBird.birdType = rand(0,108, newBird.id);
         
         newBird.level = 1;
         newBird.experience = 0;
@@ -225,12 +226,29 @@ contract BirdBase is Random, Achievments{
     //Возможна ошибка при "перескоке через уровень"
     function updateBirdLvl(uint _birdId) internal {
         Bird storage foundBird = allBirds[_birdId];
-        if (foundBird.experience >= lvlTable[foundBird.level]) {
-            foundBird.level++;
+        
+        for (uint i = foundBird.level; i < lvlTable.length; i++) {
+            if (foundBird.experience >= lvlTable[i] && foundBird.experience < lvlTable[i+1]) {
+                foundBird.level = i+1;
+                updateBirdChar(_birdId);
+            }
         }
         
         birdLvlUp(foundBird.level);
-        //TODO update skills
+    }
+    
+    function updateBirdChar(uint _birdId) internal {
+        Bird storage foundBird = allBirds[_birdId];
+        
+        for (uint i=0; i < birdsChar.length; i++) {
+            if (foundBird.birdType >= birdsChar[i].start && foundBird.birdType <= birdsChar[i].end) {
+                foundBird.totalHP += birdsChar[i].hp;
+                foundBird.strength += birdsChar[i].strengthUpgr;
+                foundBird.protection += birdsChar[i].protection;
+                
+                break;
+            }
+        }
     }
     
 }
@@ -435,7 +453,7 @@ contract User is BirdBase{
         require(getEat(msg.sender) >= _count);
         
         allBirds[_birdId].experience += _count * eatExp;
-        users[msg.sender].eats--;
+        users[msg.sender].eats -= _count;
         
         updateItemsCount(msg.sender);
         updateBirdLvl(_birdId);
@@ -670,6 +688,7 @@ contract Admin is Arena{
             end: 17,
             hp: 10,
             strength: 1,
+            strengthUpgr: 1,
             protection: 1,
             
             spec1: 20,
@@ -681,6 +700,7 @@ contract Admin is Arena{
             end: 35,
             hp: 8,
             strength: 2,
+            strengthUpgr: 1,
             protection: 1,
             
             spec1: 15,
@@ -692,10 +712,47 @@ contract Admin is Arena{
             end: 53,
             hp: 12,
             strength: 1,
+            strengthUpgr: 1,
             protection: 2,
             
             spec1: 15,
             spec2: 35
+        }));
+        
+        birdsChar.push(BirdChar({
+            start: 54,
+            end: 71,
+            hp: 9,
+            strength: 1,
+            strengthUpgr: 1,
+            protection: 1,
+            
+            spec1: 15,
+            spec2: 40
+        }));
+        
+        birdsChar.push(BirdChar({
+            start: 72,
+            end: 89,
+            hp: 10,
+            strength: 2,
+            strengthUpgr: 1,
+            protection: 1,
+            
+            spec1: 13,
+            spec2: 30
+        }));
+        
+        birdsChar.push(BirdChar({
+            start: 90,
+            end: 107,
+            hp: 8,
+            strength: 3,
+            strengthUpgr: 2,
+            protection: 1,
+            
+            spec1: 13,
+            spec2: 20
         }));
     }
     
