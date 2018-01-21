@@ -15,28 +15,6 @@ contract Random {
     event random(uint num);
 }
 
-contract CoolDown{
-    /* Пример для таймера */
-    uint start_time;
-    uint totalBirds;
-    
-    //TODO onlyStayHolder && moderator
-    function startCoolDown() public {
-        totalBirds = 0;
-        start_time = now;
-    }
-    
-    function calcTime() private {
-        uint newbirds = (now-start_time)/3;
-        totalBirds += newbirds;
-    }
-    
-    function getTotalBirds() constant returns (uint _birds){
-        calcTime();
-        return totalBirds;
-    }
-}
-
 contract Achievments {
     event storePurchases(uint n); //n-ое кол-во покупок в магазине
     event exchangePurchases(uint n); //n-ое кол-во покупок на бирже
@@ -488,7 +466,7 @@ contract User is BirdBase{
     event error(string msg, address owner);
 }
 
-contract Arena is User, CoolDown{
+contract Arena is User{
     uint[] waitingFightBirds;
     //uint[] winersRecovery;
     //uint[] looseRecovery;
@@ -532,63 +510,49 @@ contract Arena is User, CoolDown{
     }
     
     function fight(uint firstBirdId, uint secondBirdId, uint _i) internal returns(bytes1){
-        uint fbHP = getRealHP(firstBirdId);
-        uint sbHP = getRealHP(secondBirdId);
+        uint fbHP = getRealHP(firstBirdId);//+
+        uint sbHP = getRealHP(secondBirdId);//+
         bool draw = false;
         
         //ограничить число итераций для экономии газа
-        //переделать принцип работы с защитой
         //снос HP работает не совсем корректно
         while (fbHP!=0 && sbHP!=0) {
-            allBirds[firstBirdId].zeroHpTime = now;
-            allBirds[secondBirdId].zeroHpTime = now;
+            //wtf
+            /*allBirds[firstBirdId].zeroHpTime = now;
+            allBirds[secondBirdId].zeroHpTime = now;*/
             
             //first part
-            uint result1;
             uint attackFB = getAttack(firstBirdId);
-            uint protectionSB = getProtection(secondBirdId);
-            
-            if (attackFB > protectionSB)
-                result1 = attackFB-protectionSB;
-            else 
-                result1 = 0;
                 
-            if (sbHP >= result1){
-                sbHP -= result1;
-                allBirds[secondBirdId].zeroHpTime += timeToRecover*result1/allBirds[firstBirdId].totalHP;
+            if (sbHP >= attackFB){
+                sbHP -= attackFB;
+                allBirds[secondBirdId].zeroHpTime += timeToRecover*attackFB/allBirds[secondBirdId].totalHP;
             }
             else {
-                result1 = result1 - sbHP;
+                attackFB = attackFB - sbHP;
                 sbHP = 0;
                 allBirds[secondBirdId].zeroHpTime = uint(now) + uint(timeToRecover);
                 draw = true;
             }
             
             //second part
-            
-            uint result2;
             uint attackSB = getAttack(secondBirdId);
-            uint protectionFB = getProtection(firstBirdId);
 
-            if (attackSB > protectionFB)
-                result2 = attackSB-protectionFB;
-            else 
-                result2 = 0;
             
-            if (fbHP >= result2){
-                fbHP -= result2;
-                allBirds[firstBirdId].zeroHpTime += timeToRecover*result2/allBirds[firstBirdId].totalHP;
+            if (fbHP >= attackSB){
+                fbHP -= attackSB;
+                allBirds[firstBirdId].zeroHpTime += timeToRecover*attackSB/allBirds[firstBirdId].totalHP;
             }
             else {
                 if (draw) {
-                    result2 = result2 - fbHP;
+                    attackSB = attackSB - fbHP;
                     
-                    if (result1 != result2)
+                    if (attackFB != attackSB)
                         draw = false;
                         
-                    if (result2 > result1)
+                    if (attackSB > attackFB)
                         sbHP = 1;
-                    if (result2 < result1)
+                    if (attackSB < attackFB)
                         fbHP = 1;
                 }
                 else
@@ -609,16 +573,12 @@ contract Arena is User, CoolDown{
         
         // не работает    
         delete waitingFightBirds[_i];
+        message(_i);
+        message(waitingFightBirds.length);
     }
     
     function getAttack(uint id) private returns(uint) {
         uint res = rand(allBirds[id].strength, allBirds[id].strength*3, now);
-        fightLog(res);
-        return res;
-    }
-    
-    function getProtection(uint id) private returns(uint) {
-        uint res = rand(0, allBirds[id].protection*2, now);
         fightLog(res);
         return res;
     }
@@ -649,6 +609,7 @@ contract Arena is User, CoolDown{
     
     event fightResult(uint, uint, bool);
     event fightLog(uint);
+    event message(uint);
 }
 
 contract Admin is Arena{
@@ -683,8 +644,6 @@ contract Admin is Arena{
             eatExp = 5;
             
             initBirdsChar();
-            
-            startCoolDown();
     }
     
     function initBirdsChar() internal {
