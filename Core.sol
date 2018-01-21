@@ -267,7 +267,7 @@ contract User is BirdBase{
         address refer;
         
         //INVENTORY
-        uint[] birds;
+        uint birds;
         uint[] equipments;
         uint eats;
         uint baskets;
@@ -332,7 +332,7 @@ contract User is BirdBase{
         uint maxItems,
         uint itemsCount
     ) {
-        return (users[_user].birds.length,
+        return (users[_user].birds,
             users[_user].equipments.length,
             getEat(_user),
             users[_user].baskets,
@@ -433,7 +433,8 @@ contract User is BirdBase{
         require(UserData.maxItems - UserData.itemsCount >= 4);
         
         for (uint i = 0; i < 1; i++ ) {
-            UserData.birds.push(bornBird(msg.sender));
+            bornBird(msg.sender);
+            UserData.birds++;
         }
                 
         //выпала амуниция
@@ -489,8 +490,8 @@ contract User is BirdBase{
 
 contract Arena is User, CoolDown{
     uint[] waitingFightBirds;
-    uint[] winersRecovery;
-    uint[] looseRecovery;
+    //uint[] winersRecovery;
+    //uint[] looseRecovery;
     uint constant timeToRecover = 100;//21600;
     
     function findFighter(uint birdId) public {
@@ -769,7 +770,9 @@ contract Admin is Arena{
         require(msg.sender == exchAddress);
         require(users[newOwner].itemsCount < users[newOwner].maxItems);
 
+        users[birdOwner[birdId]].birds--;
         birdOwner[birdId] = newOwner;
+        users[newOwner].birds++;
     } 
     
     function transferStocks(address _to, uint _balance) public {

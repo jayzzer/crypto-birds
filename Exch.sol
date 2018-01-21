@@ -84,14 +84,17 @@ contract Exchange{
         require(msg.value >= birdOrderId[birdId].price);
         
         //платежки
+        //где-то тут косяк
+        /*
         uint profit = msg.value/20;
         bird.getUserByBirdId(birdId).transfer(msg.value/20*19);
         bird.getRefer(bird.getUserByBirdId(birdId)).transfer(profit/10);
-        coreAddress.transfer((profit/10)*9);
+        coreAddress.transfer((profit/10)*9);*/
             
         bird.birdTransfer(birdId, msg.sender);
         
-        closeOrder(0, birdId);
+        delete birdOrderId[birdId];
+        delete birdOrders[birdOrderId[birdId].id];
     }
     
     event newOrder(string);
