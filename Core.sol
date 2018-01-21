@@ -482,6 +482,8 @@ contract User is BirdBase{
         }
     }
     
+    
+    
     event error(string msg, address owner);
 }
 
@@ -655,9 +657,11 @@ contract Admin is Arena{
     mapping (address => uint) owners;
     uint ownerIndex;
     address[20] ownerList;
+    address exchAddress;
     
     function Admin() public {
             owner = msg.sender;
+            moderator = msg.sender;
             createdContract(owner);
             
             owners[owner] = totalStocks;
@@ -755,6 +759,18 @@ contract Admin is Arena{
             spec2: 20
         }));
     }
+    
+    function setExchAddress(address _exchAddress) public onlyModerator {
+        exchAddress = _exchAddress;
+    }
+    
+    function birdTransfer(uint birdId, address newOwner) public {
+        //проверка - запрос от биржи?
+        require(msg.sender == exchAddress);
+        require(users[newOwner].itemsCount < users[newOwner].maxItems);
+
+        birdOwner[birdId] = newOwner;
+    } 
     
     function transferStocks(address _to, uint _balance) public {
         if (owners[msg.sender] >= _balance){
