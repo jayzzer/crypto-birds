@@ -223,7 +223,6 @@ contract BirdBase is Random, Achievments{
         return (birdOwner[_id], allBirds[_id].id, allBirds[_id].birdType, allBirds[_id].level, allBirds[_id].experience,allBirds[_id].totalHP, allBirds[_id].win/*,allBirds[_id].lose,allBirds[_id].strength,allBirds[_id].protection*/);
     }
     
-    //Возможна ошибка при "перескоке через уровень"
     function updateBirdLvl(uint _birdId) internal {
         Bird storage foundBird = allBirds[_birdId];
         
@@ -275,7 +274,6 @@ contract User is BirdBase{
         uint regDate;
         
         uint maxItems;
-        uint itemsCount;
     }
     
     uint userIndex;
@@ -307,7 +305,6 @@ contract User is BirdBase{
             users[msg.sender].potions = 0;
             
             users[msg.sender].maxItems = initMaxItems;
-            users[msg.sender].itemsCount = 0;
         }
     }
     
@@ -339,8 +336,18 @@ contract User is BirdBase{
             users[_user].potions,
             
             users[_user].maxItems,
-            users[_user].itemsCount
+            getItemsCount(_user)
         );
+    }
+    
+    function getItemsCount(address _user) internal constant returns (uint itemsCount) {
+        user storage userData = users[_user];
+        
+        return userData.birds.length + 
+            userData.equipments.length + 
+            userData.eats + 
+            userData.baskets + 
+            userData.potions;
     }
         
     function getUserByID(uint _id) public constant returns (string name, string email, address _address) {
@@ -355,12 +362,11 @@ contract User is BirdBase{
         uint _daily = (now-users[_user].regDate)/100;//86400;
         users[_user].regDate = now;
         
-        if (users[_user].maxItems >= (users[_user].itemsCount + _daily))
+        if (users[_user].maxItems >= (getItemsCount(_user) + _daily))
             users[_user].eats = _daily + users[_user].eats;
         else
-            users[_user].eats = users[_user].eats + users[_user].maxItems - users[_user].itemsCount;
+            users[_user].eats = users[_user].eats + users[_user].maxItems - getItemsCount(_user);
             
-        updateItemsCount(_user);
         return users[_user].eats;
     }
     
@@ -373,22 +379,10 @@ contract User is BirdBase{
         userData.maxItems += 5;
     }
     
-    function updateItemsCount (address _sender) internal returns (uint itemsCount){
-        user storage userData = users[_sender];
-        
-        userData.itemsCount = //userData.birds.length + 
-            userData.equipments.length + 
-            userData.eats + 
-            userData.baskets + 
-            userData.potions;
-            
-        return userData.itemsCount;
-    }
-    
     function buyPotion() external payable {
         user storage userData = users[msg.sender];
         require(userData.maxItems > 0);//maxItems>0 - проверка на регистрацию
-        require(userData.maxItems - userData.itemsCount >= 1);
+        require(userData.maxItems - getItemsCount(msg.sender) >= 1);
         require(msg.value >= potionPrice);
         
         if (users[msg.sender].refer != msg.sender) {
@@ -396,18 +390,17 @@ contract User is BirdBase{
         }
         
         uint _potions = msg.value/potionPrice;
-        if ((userData.maxItems - userData.itemsCount) >= _potions)
+        if ((userData.maxItems - getItemsCount(msg.sender)) >= _potions)
             userData.potions += _potions;
         else
-            userData.potions += (userData.maxItems - userData.itemsCount);
-            
-        updateItemsCount(msg.sender);
+            userData.potions += (userData.maxItems - getItemsCount(msg.sender));
     }
     
     function buyBasket() external payable {
+        require(msg.value >= basketPrice);
         user storage userData = users[msg.sender];
         require(userData.maxItems > 0);//maxItems>0 - проверка на регистрацию
-        require(userData.maxItems - userData.itemsCount >= 1);
+        require(userData.maxItems - getItemsCount(msg.sender) >= 1);
         
         if (users[msg.sender].refer != msg.sender) {
             users[msg.sender].refer.transfer(msg.value/10);
@@ -415,12 +408,10 @@ contract User is BirdBase{
         
         if (msg.value >= basketPrice) {
             uint _backets = msg.value/basketPrice;
-            if ((userData.maxItems - userData.itemsCount) >= _backets)
+            if ((userData.maxItems - getItemsCount(msg.sender)) >= _backets)
                 userData.baskets += _backets;
             else
-                userData.baskets += (userData.maxItems - userData.itemsCount);
-                
-            updateItemsCount(msg.sender);
+                userData.baskets += (userData.maxItems - getItemsCount(msg.sender));
         } else {
             error("Not enough ether to buy basket!", msg.sender);
         }
@@ -430,7 +421,7 @@ contract User is BirdBase{
     function openBasket() external {
         user storage UserData = users[msg.sender];
         require(UserData.baskets >= 1);
-        require(UserData.maxItems - UserData.itemsCount >= 4);
+        require(UserData.maxItems - getItemsCount(msg.sender) >= 4);
         
         for (uint i = 0; i < 1; i++ ) {
             UserData.birds.push(bornBird(msg.sender));
@@ -443,8 +434,6 @@ contract User is BirdBase{
         UserData.eats++;
         
         UserData.baskets--;
-            
-        updateItemsCount(msg.sender);
     }
     
     function feedBird(uint _birdId, uint _count) external {
@@ -455,7 +444,6 @@ contract User is BirdBase{
         allBirds[_birdId].experience += _count * eatExp;
         users[msg.sender].eats -= _count;
         
-        updateItemsCount(msg.sender);
         updateBirdLvl(_birdId);
     }
     
