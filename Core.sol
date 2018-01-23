@@ -321,7 +321,7 @@ contract User is BirdBase{
     function getItemsCount(address _user) internal constant returns (uint itemsCount) {
         user storage userData = users[_user];
         
-        return userData.birds.length + 
+        return userData.birds + 
             userData.equipments.length + 
             userData.eats + 
             userData.baskets + 
@@ -489,7 +489,7 @@ contract Arena is User{
         return answer;
     }
     
-    function getRealHP(uint _birdId) constant returns(uint) {
+        function getRealHP(uint _birdId) constant returns(uint) {
         if (now <= allBirds[_birdId].zeroHpTime){
             return allBirds[_birdId].totalHP-(allBirds[_birdId].zeroHpTime - now)*allBirds[_birdId].totalHP/timeToRecover;
         }
@@ -715,7 +715,7 @@ contract Admin is Arena{
     function birdTransfer(uint birdId, address newOwner) public {
         //проверка - запрос от биржи?
         require(msg.sender == exchAddress);
-        require(users[newOwner].itemsCount < users[newOwner].maxItems);
+        require(getItemsCount(newOwner) < users[newOwner].maxItems);
 
         users[birdOwner[birdId]].birds--;
         birdOwner[birdId] = newOwner;
