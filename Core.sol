@@ -245,7 +245,7 @@ contract User is BirdBase{
         
         //INVENTORY
         uint birds;
-        uint[] equipments;
+        uint equipments;
         uint eats;
         uint baskets;
         uint potions;
@@ -308,7 +308,7 @@ contract User is BirdBase{
         uint itemsCount
     ) {
         return (users[_user].birds,
-            users[_user].equipments.length,
+            users[_user].equipments,
             getEat(_user),
             users[_user].baskets,
             users[_user].potions,
@@ -322,7 +322,7 @@ contract User is BirdBase{
         user storage userData = users[_user];
         
         return userData.birds + 
-            userData.equipments.length + 
+            userData.equipments + 
             userData.eats + 
             userData.baskets + 
             userData.potions;
@@ -407,7 +407,8 @@ contract User is BirdBase{
         }
                 
         //выпала амуниция
-        UserData.equipments.push(genEquipment(msg.sender));
+        genEquipment(msg.sender);
+        UserData.equipments++;
             
         //выпала еда
         UserData.eats++;
@@ -428,6 +429,10 @@ contract User is BirdBase{
     
     function getUserByBirdId(uint _birdId) public constant returns (address) {
         return birdOwner[_birdId];
+    }
+    
+    function getUserByEquipId(uint _equipId) public constant returns (address) {
+        return equipOwner[_equipId];
     }
     
     function isOwnerOf(uint _bird) internal constant returns(bool){
@@ -715,11 +720,22 @@ contract Admin is Arena{
     function birdTransfer(uint birdId, address newOwner) public {
         //проверка - запрос от биржи?
         require(msg.sender == exchAddress);
+        error("fsffs", msg.sender);
         require(getItemsCount(newOwner) < users[newOwner].maxItems);
 
         users[birdOwner[birdId]].birds--;
         birdOwner[birdId] = newOwner;
         users[newOwner].birds++;
+    } 
+    
+    function equipTransfer(uint equipId, address newOwner) public {
+        //проверка - запрос от биржи?
+        require(msg.sender == exchAddress);
+        require(getItemsCount(newOwner) < users[newOwner].maxItems);
+
+        users[equipOwner[equipId]].equipments--;
+        equipOwner[equipId] = newOwner;
+        users[newOwner].equipments++;
     } 
     
     function transferStocks(address _to, uint _balance) public {
