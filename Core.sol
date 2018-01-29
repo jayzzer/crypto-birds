@@ -233,7 +233,7 @@ contract BirdBase is Random, Achievments{
         Bird storage foundBird = allBirds[_birdId];
         uint birdType = getBirdType(_birdId);
         
-        return birdsChar[birdType].strength + birdsChar[birdType].strengthUpgr*(foundBird.level-1);
+        return birdsChar[birdType-1].strength + birdsChar[birdType-1].strengthUpgr*(foundBird.level-1);
     }
     
     function getBirdProtection (uint _birdId) public constant
@@ -241,7 +241,7 @@ contract BirdBase is Random, Achievments{
         Bird storage foundBird = allBirds[_birdId];
         uint birdType = getBirdType(_birdId);
     
-        return birdsChar[birdType].protection * foundBird.level;
+        return birdsChar[birdType-1].protection * foundBird.level;
     }
 }
 
