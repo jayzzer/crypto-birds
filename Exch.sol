@@ -107,8 +107,14 @@ contract Exchange{
         //где-то тут косяк
         // uint profit = msg.value/20;
         // bird.getUserByBirdId(birdId).transfer(msg.value/20*19);
-        // bird.getRefer(bird.getUserByBirdId(birdId)).transfer(profit/10);
-        // coreAddress.transfer(profit);
+        address refer = bird.getRefer(to);
+        uint referProfit = 0;
+        // if (refer != "0x0000000000000000000000000000000000000000") {
+        //     referProfit = profit/10;
+        //     bird.getRefer(to).transfer(referProfit);
+        // }
+        
+        coreAddress.send(profit-referProfit);
     }
     
     function acceptBirdOrder(uint birdId) public payable {

@@ -79,15 +79,11 @@ contract BirdBase is Random, Achievments{
         uint level;
         uint experience;
         
-        uint totalHP;
         uint zeroHpTime;
         
         uint win;
         uint lose;
         uint draw;
-        
-        uint strength;
-        uint protection;
     }
     
     mapping (uint => Equipment) equips;
@@ -122,24 +118,23 @@ contract BirdBase is Random, Achievments{
         allBirds[newBird.id] = newBird;
         birdOwner[newBird.id] = _user;
         
-        initBirdChar(newBird.id);
-        
         return newBird.id;
     }
     
-    function initBirdChar(uint _birdId) internal {
-        Bird storage foundBird = allBirds[_birdId];
+    //Больше не нужно, так как вынесли получение хар-ик в геттеры
+    // function initBirdChar(uint _birdId) internal {
+    //     Bird storage foundBird = allBirds[_birdId];
         
-        for (uint i=0; i < birdsChar.length; i++) {
-            if (foundBird.birdType >= birdsChar[i].start && foundBird.birdType <= birdsChar[i].end) {
-                foundBird.totalHP = birdsChar[i].hp;
-                foundBird.strength = birdsChar[i].strength;
-                foundBird.protection = birdsChar[i].protection;
+    //     for (uint i=0; i < birdsChar.length; i++) {
+    //         if (foundBird.birdType >= birdsChar[i].start && foundBird.birdType <= birdsChar[i].end) {
+    //             foundBird.totalHP = birdsChar[i].hp;
+    //             foundBird.strength = birdsChar[i].strength;
+    //             foundBird.protection = birdsChar[i].protection;
                 
-                break;
-            }
-        }
-    }
+    //             break;
+    //         }
+    //     }
+    // }
     
     function genEquipment(address _user) public returns(uint){
         uint lvlRand = rand(0, 930, equip.id);
@@ -160,7 +155,8 @@ contract BirdBase is Random, Achievments{
         return equip.id;
     }
     
-    function getEquipValue(uint lvl) internal constant returns(uint) {
+    function getEquipValue(uint lvl) internal constant 
+    returns(uint) {
         return (lvl+1)*5;
     }
     
@@ -198,7 +194,7 @@ contract BirdBase is Random, Achievments{
         uint strength,
         uint protection*/
     ){
-        return (birdOwner[_id], allBirds[_id].id, allBirds[_id].birdType, allBirds[_id].level, allBirds[_id].experience,allBirds[_id].totalHP, allBirds[_id].win/*,allBirds[_id].lose,allBirds[_id].strength,allBirds[_id].protection*/);
+        return (birdOwner[_id], allBirds[_id].id, allBirds[_id].birdType, allBirds[_id].level, allBirds[_id].experience,getBirdHP(_id), allBirds[_id].win/*,allBirds[_id].lose,allBirds[_id].strength,allBirds[_id].protection*/);
     }
     
     function updateBirdLvl(uint _birdId) internal {
@@ -207,30 +203,49 @@ contract BirdBase is Random, Achievments{
         for (uint i = foundBird.level; i < lvlTable.length; i++) {
             if (foundBird.experience >= lvlTable[i] && foundBird.experience < lvlTable[i+1]) {
                 foundBird.level = i+1;
-                updateBirdChar(_birdId);
             }
         }
         
         birdLvlUp(foundBird.level);
     }
     
-    function updateBirdChar(uint _birdId) internal {
+    function getBirdType (uint _birdId) public constant
+    returns(uint birdType) {
         Bird storage foundBird = allBirds[_birdId];
         
         for (uint i=0; i < birdsChar.length; i++) {
             if (foundBird.birdType >= birdsChar[i].start && foundBird.birdType <= birdsChar[i].end) {
-                foundBird.totalHP += birdsChar[i].hp;
-                foundBird.strength += birdsChar[i].strengthUpgr;
-                foundBird.protection += birdsChar[i].protection;
-                
-                break;
+                return i+1;
             }
         }
     }
     
+    function getBirdHP (uint _birdId) public constant 
+    returns (uint hp) {
+        Bird storage foundBird = allBirds[_birdId];
+        uint birdType = getBirdType(_birdId);
+        
+        return birdsChar[birdType-1].hp * foundBird.level;
+    }
+    
+    function getBirdStrength (uint _birdId) public constant
+    returns (uint strength) {
+        Bird storage foundBird = allBirds[_birdId];
+        uint birdType = getBirdType(_birdId);
+        
+        return birdsChar[birdType].strength + birdsChar[birdType].strengthUpgr*(foundBird.level-1);
+    }
+    
+    function getBirdProtection (uint _birdId) public constant
+    returns (uint protection) {
+        Bird storage foundBird = allBirds[_birdId];
+        uint birdType = getBirdType(_birdId);
+    
+        return birdsChar[birdType].protection * foundBird.level;
+    }
 }
 
-contract User is BirdBase{    
+contract User is BirdBase {
     uint initMaxItems;
     uint maxBaskets;
     uint basketPrice;
@@ -454,7 +469,10 @@ contract User is BirdBase{
         }
     }
     
-    
+    function getRefer (address _user) public constant 
+    returns (address refer) {
+        return users[_user].refer;    
+    }
     
     event error(string msg, address owner);
 }
@@ -494,12 +512,14 @@ contract Arena is User{
         return answer;
     }
     
-        function getRealHP(uint _birdId) constant returns(uint) {
+    function getRealHP(uint _birdId) constant returns(uint) {
+        uint birdHP = getBirdHP(_birdId);
+        
         if (now <= allBirds[_birdId].zeroHpTime){
-            return allBirds[_birdId].totalHP-(allBirds[_birdId].zeroHpTime - now)*allBirds[_birdId].totalHP/timeToRecover;
+            return birdHP-(allBirds[_birdId].zeroHpTime - now)*birdHP/timeToRecover;
         }
         else
-            return allBirds[_birdId].totalHP;
+            return birdHP;
     }
     
     function fight(uint firstBirdId, uint secondBirdId, uint _i) internal returns(bytes1){
@@ -519,7 +539,7 @@ contract Arena is User{
                 
             if (sbHP >= attackFB){
                 sbHP -= attackFB;
-                allBirds[secondBirdId].zeroHpTime += timeToRecover*attackFB/allBirds[secondBirdId].totalHP;
+                allBirds[secondBirdId].zeroHpTime += timeToRecover*attackFB/getBirdHP(secondBirdId);
             }
             else {
                 attackFB = attackFB - sbHP;
@@ -534,7 +554,7 @@ contract Arena is User{
             
             if (fbHP >= attackSB){
                 fbHP -= attackSB;
-                allBirds[firstBirdId].zeroHpTime += timeToRecover*attackSB/allBirds[firstBirdId].totalHP;
+                allBirds[firstBirdId].zeroHpTime += timeToRecover*attackSB/getBirdHP(firstBirdId);
             }
             else {
                 if (draw) {
@@ -571,7 +591,8 @@ contract Arena is User{
     }
     
     function getAttack(uint id) private returns(uint) {
-        uint res = rand(allBirds[id].strength, allBirds[id].strength*3, now);
+        uint birdStrength = getBirdStrength(id);
+        uint res = rand(birdStrength, birdStrength*3, now);
         fightLog(res);
         return res;
     }
