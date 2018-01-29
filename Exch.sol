@@ -109,10 +109,10 @@ contract Exchange{
         // bird.getUserByBirdId(birdId).transfer(msg.value/20*19);
         address refer = bird.getRefer(to);
         uint referProfit = 0;
-        // if (refer != "0x0000000000000000000000000000000000000000") {
-        //     referProfit = profit/10;
-        //     bird.getRefer(to).transfer(referProfit);
-        // }
+        if (refer != address(0)) {
+            referProfit = profit/10;
+            refer.transfer(referProfit);
+        }
         
         coreAddress.send(profit-referProfit);
     }
