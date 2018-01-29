@@ -121,6 +121,10 @@ contract BirdBase is Random, Achievments{
         return newBird.id;
     }
     
+    function getBirdIndex() public constant returns(uint){
+        return birdIndex;
+    }
+    
     //Больше не нужно, так как вынесли получение хар-ик в геттеры
     // function initBirdChar(uint _birdId) internal {
     //     Bird storage foundBird = allBirds[_birdId];
