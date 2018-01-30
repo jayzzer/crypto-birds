@@ -360,7 +360,7 @@ contract User is BirdBase {
     }
     
     function getEat(address _user) internal returns(uint){
-        uint _daily = (now-users[_user].regDate)/100;//86400;
+        uint _daily = (now-users[_user].regDate)/86400;
         users[_user].regDate = now;
         
         if (users[_user].maxItems >= (getItemsCount(_user) + _daily))
@@ -490,20 +490,20 @@ contract Arena is User{
     mapping (uint => uint) birdEquip;
     //uint[] winersRecovery;
     //uint[] looseRecovery;
-    uint constant timeToRecover = 100;//21600;
+    uint timeToRecover = 21600;
     
     function findFighter(uint birdId, uint _birdEquip) public {
         //проверка, что выставляется птица, которой он владеет
-        uint toDel = 0;
         require(getUserByBirdId(birdId) == msg.sender && !checkWaiting(birdId));
+        require(_birdEquip == 0 || (getUserByEquipId(_birdEquip) == msg.sender));
             //поиск по уже выставленным
             bool nonWait = true;
             for (uint i=0; i<waitingFightBirds.length; i++){
                 if (allBirds[waitingFightBirds[i]].level == allBirds[birdId].level){
                     nonWait = false;
                     uint birdOne = waitingFightBirds[i];
-                    toDel = i;
                     delete birdEquip[birdOne];
+                    delWaiting(i);
                     fight(birdOne, birdId);
                 }
             }
@@ -513,9 +513,14 @@ contract Arena is User{
                 waitingFightBirds.push(birdId);
                 birdEquip[birdId] = _birdEquip;
             }
-            else{
-                delete waitingFightBirds[toDel];
-            }
+    }
+    
+    function delWaiting(uint i) private {
+        delete waitingFightBirds[i];
+        if (waitingFightBirds.length>1) {
+            waitingFightBirds[i] = waitingFightBirds[waitingFightBirds.length-1];
+        }
+        waitingFightBirds.length--;
     }
     
     function checkWaiting(uint birdId) public constant returns(bool) {
@@ -542,9 +547,6 @@ contract Arena is User{
         uint sbHP = getRealHP(secondBirdId);
         bool draw = false;
         
-        
-        //получить id оружия птиц
-        
         uint equipmentType1; uint equipmentType2;
         uint value1; uint value2;
         if (birdEquip[firstBirdId]!=0){
@@ -558,8 +560,6 @@ contract Arena is User{
                 sbHP = sbHP + value2;
         }
         
-        //ограничить число итераций для экономии газа
-        //снос HP работает не совсем корректно
         while (fbHP!=0 && sbHP!=0) {
             
             //first part
@@ -635,19 +635,19 @@ contract Arena is User{
         //TODO fix experience
         if (!draw) {
             allBirds[winId].win++;
-            allBirds[winId].experience +=5;
+            allBirds[winId].experience += getBirdHP(looseId)/11;
             
             allBirds[looseId].lose++;
-            allBirds[looseId].experience +=1;
+            allBirds[looseId].experience += getBirdHP(winId)/44;
             
         }
         else
         {
             allBirds[winId].draw++;
-            allBirds[winId].experience +=3;
+            allBirds[winId].experience += getBirdHP(looseId)/25;
             
             allBirds[looseId].draw++;
-            allBirds[looseId].experience +=3;
+            allBirds[looseId].experience += getBirdHP(winId)/25;
         }
         updateBirdLvl(winId);
         updateBirdLvl(looseId);
