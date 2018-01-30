@@ -66,7 +66,7 @@ contract BirdBase is Random, Achievments{
     BirdChar[] birdsChar;
     
     uint birdIndex = 0;
-    uint eqIndex = 0;
+    uint eqIndex = 1;
     
     //id -> bird
     mapping (uint => Bird) allBirds;
@@ -125,6 +125,10 @@ contract BirdBase is Random, Achievments{
         return birdIndex;
     }
     
+    function getBirdStat(uint _id) constant returns(uint win, uint loose, uint draw) {
+        return (allBirds[_id].win, allBirds[_id].lose, allBirds[_id].draw);
+    }
+    
     //Больше не нужно, так как вынесли получение хар-ик в геттеры
     // function initBirdChar(uint _birdId) internal {
     //     Bird storage foundBird = allBirds[_birdId];
@@ -177,7 +181,7 @@ contract BirdBase is Random, Achievments{
     }
     
     function getEquip(uint _id) 
-    external constant 
+    public constant 
     returns (
         uint equipmentType,
         uint itemLvl,
@@ -237,7 +241,7 @@ contract BirdBase is Random, Achievments{
         Bird storage foundBird = allBirds[_birdId];
         uint birdType = getBirdType(_birdId);
         
-        return birdsChar[birdType].strength + birdsChar[birdType].strengthUpgr*(foundBird.level-1);
+        return birdsChar[birdType-1].strength + birdsChar[birdType-1].strengthUpgr*(foundBird.level-1);
     }
     
     function getBirdProtection (uint _birdId) public constant
@@ -245,7 +249,7 @@ contract BirdBase is Random, Achievments{
         Bird storage foundBird = allBirds[_birdId];
         uint birdType = getBirdType(_birdId);
     
-        return birdsChar[birdType].protection * foundBird.level;
+        return birdsChar[birdType-1].protection * foundBird.level;
     }
 }
 
@@ -483,28 +487,35 @@ contract User is BirdBase {
 
 contract Arena is User{
     uint[] waitingFightBirds;
+    mapping (uint => uint) birdEquip;
     //uint[] winersRecovery;
     //uint[] looseRecovery;
     uint constant timeToRecover = 100;//21600;
     
-    function findFighter(uint birdId) public {
+    function findFighter(uint birdId, uint _birdEquip) public {
         //проверка, что выставляется птица, которой он владеет
-        if (getUserByBirdId(birdId) == msg.sender && !checkWaiting(birdId)){
+        uint toDel = 0;
+        require(getUserByBirdId(birdId) == msg.sender && !checkWaiting(birdId));
             //поиск по уже выставленным
             bool nonWait = true;
             for (uint i=0; i<waitingFightBirds.length; i++){
                 if (allBirds[waitingFightBirds[i]].level == allBirds[birdId].level){
-                    fight(waitingFightBirds[i], birdId, i);
                     nonWait = false;
+                    uint birdOne = waitingFightBirds[i];
+                    toDel = i;
+                    delete birdEquip[birdOne];
+                    fight(birdOne, birdId);
                 }
             }
             
             //добавление в поиск
             if (nonWait) {
                 waitingFightBirds.push(birdId);
+                birdEquip[birdId] = _birdEquip;
             }
-            
-        }
+            else{
+                delete waitingFightBirds[toDel];
+            }
     }
     
     function checkWaiting(uint birdId) public constant returns(bool) {
@@ -526,20 +537,33 @@ contract Arena is User{
             return birdHP;
     }
     
-    function fight(uint firstBirdId, uint secondBirdId, uint _i) internal returns(bytes1){
-        uint fbHP = getRealHP(firstBirdId);//+
-        uint sbHP = getRealHP(secondBirdId);//+
+    function fight(uint firstBirdId, uint secondBirdId) internal returns(bytes1){
+        uint fbHP = getRealHP(firstBirdId);
+        uint sbHP = getRealHP(secondBirdId);
         bool draw = false;
+        
+        
+        //получить id оружия птиц
+        
+        uint equipmentType1; uint equipmentType2;
+        uint value1; uint value2;
+        if (birdEquip[firstBirdId]!=0){
+            (equipmentType1, , value1) = getEquip(birdEquip[firstBirdId]);
+            if (equipmentType1 == 0)
+                fbHP = fbHP + value1;
+        }
+        if (birdEquip[firstBirdId]!=0) {
+            (equipmentType2, , value2) = getEquip(birdEquip[secondBirdId]);
+            if (equipmentType2 == 0)
+                sbHP = sbHP + value2;
+        }
         
         //ограничить число итераций для экономии газа
         //снос HP работает не совсем корректно
         while (fbHP!=0 && sbHP!=0) {
-            //wtf
-            /*allBirds[firstBirdId].zeroHpTime = now;
-            allBirds[secondBirdId].zeroHpTime = now;*/
             
             //first part
-            uint attackFB = getAttack(firstBirdId);
+            uint attackFB = getAttack(firstBirdId, birdEquip[firstBirdId]);
                 
             if (sbHP >= attackFB){
                 sbHP -= attackFB;
@@ -553,7 +577,7 @@ contract Arena is User{
             }
             
             //second part
-            uint attackSB = getAttack(secondBirdId);
+            uint attackSB = getAttack(secondBirdId, birdEquip[secondBirdId]);
 
             
             if (fbHP >= attackSB){
@@ -588,15 +612,20 @@ contract Arena is User{
         if (fbHP==0 && sbHP==0)
             afterFirght(firstBirdId, secondBirdId, draw);
         
-        // не работает    
-        delete waitingFightBirds[_i];
-        message(_i);
         message(waitingFightBirds.length);
     }
     
-    function getAttack(uint id) private returns(uint) {
-        uint birdStrength = getBirdStrength(id);
+    function getAttack(uint birdId, uint equipId) private returns(uint) {
+        uint birdStrength = getBirdStrength(birdId);
         uint res = rand(birdStrength, birdStrength*3, now);
+        uint equipmentType;
+        uint value;
+        if (equipId != 0) {
+            (equipmentType, , value) = getEquip(equipId);
+            if (equipmentType == 1)
+                res = res + value;
+        }
+            
         fightLog(res);
         return res;
     }
@@ -660,6 +689,7 @@ contract Admin is Arena{
             potionPrice = 500000000000000000;
             upgrInvPrice = 500000000000000000;
             eatExp = 5;
+            
             
             initBirdsChar();
     }
