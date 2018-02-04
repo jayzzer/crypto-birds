@@ -340,6 +340,7 @@ contract User is BirdBase {
             getItemsCount(_user)
         );
     }
+
     
     function getItemsCount(address _user) internal constant returns (uint itemsCount) {
         user storage userData = users[_user];
@@ -654,7 +655,7 @@ contract Arena is User{
         fightResult(winId, looseId, draw);
     }
     
-    event fightResult(uint, uint, bool);
+    event fightResult(uint256 win, uint256 loose, bool draw);
     event fightLog(uint);
     event message(uint);
 }
@@ -860,6 +861,12 @@ contract Admin is Arena{
     modifier onlyModerator(){
         require(msg.sender == moderator);
         _;
+    }
+        
+    event testEvent(string mes, uint num);
+    function makeEvent(string a, uint b){
+        testEvent(a, b);
+        fightResult(7,77,true);
     }
     
     event pay (uint summ, address _address, uint stosks, uint balance);
