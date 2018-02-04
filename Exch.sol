@@ -21,6 +21,7 @@ contract Exchange{
     
     struct Order{
         uint id;
+        uint spec;
         uint price;
         uint date;
         address seils;
@@ -39,6 +40,7 @@ contract Exchange{
             
            _ord = Order({
                 id: birdOrderIndex,
+                spec: _spec,
                 price: _price,
                 seils: msg.sender,
                 date: now
@@ -54,6 +56,7 @@ contract Exchange{
             
             _ord = Order({
                 id: equipOrderIndex,
+                spec: _spec,
                 price: _price,
                 seils: msg.sender,
                 date: now
@@ -91,8 +94,8 @@ contract Exchange{
         return (birdOrderId[birdId].seils, birdOrderId[birdId].price, birdOrderId[birdId].date);
     }
     
-    function getByBirdOrdeId(uint index) public constant returns(address seils, uint price, uint date) {
-        return (birdOrders[index].seils, birdOrders[index].price, birdOrders[index].date);
+    function getByBirdOrdeId(uint index) public constant returns(address seils, uint price, uint date, uint spec) {
+        return (birdOrders[index].seils, birdOrders[index].price, birdOrders[index].date, birdOrders[index].spec);
     }
     
     function getOrdersLength() public constant returns(uint) {
@@ -103,16 +106,12 @@ contract Exchange{
         uint profit = value/20;
         to.transfer(value-profit);
         
-        //платежки
-        //где-то тут косяк
-        // uint profit = msg.value/20;
-        // bird.getUserByBirdId(birdId).transfer(msg.value/20*19);
         address refer = bird.getRefer(to);
         uint referProfit = 0;
-        // if (refer != "0x0000000000000000000000000000000000000000") {
-        //     referProfit = profit/10;
-        //     bird.getRefer(to).transfer(referProfit);
-        // }
+        if (refer != address(0)) {
+            referProfit = profit/10;
+            refer.transfer(referProfit);
+        }
         
         coreAddress.send(profit-referProfit);
     }
