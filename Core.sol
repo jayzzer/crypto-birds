@@ -682,8 +682,8 @@ contract Admin is Arena{
             //инициализация переменных
             userIndex = 0;
             ownerIndex = 1;
-            //birdIndex = 0;
-            eqIndex = 0;
+            birdIndex = 0;
+            eqIndex = 1;
             initMaxItems = 10;
             maxBaskets = 10;
             basketPrice = 1000000000000000000;
