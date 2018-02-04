@@ -66,7 +66,7 @@ contract BirdBase is Random, Achievments{
     BirdChar[] birdsChar;
     
     uint birdIndex = 0;
-    uint eqIndex = 0;
+    uint eqIndex = 1;
     
     //id -> bird
     mapping (uint => Bird) allBirds;
@@ -125,6 +125,10 @@ contract BirdBase is Random, Achievments{
         return birdIndex;
     }
     
+    function getBirdStat(uint _id) constant returns(uint win, uint loose, uint draw) {
+        return (allBirds[_id].win, allBirds[_id].lose, allBirds[_id].draw);
+    }
+    
     //Больше не нужно, так как вынесли получение хар-ик в геттеры
     // function initBirdChar(uint _birdId) internal {
     //     Bird storage foundBird = allBirds[_birdId];
@@ -177,7 +181,7 @@ contract BirdBase is Random, Achievments{
     }
     
     function getEquip(uint _id) 
-    external constant 
+    public constant 
     returns (
         uint equipmentType,
         uint itemLvl,
@@ -336,6 +340,7 @@ contract User is BirdBase {
             getItemsCount(_user)
         );
     }
+
     
     function getItemsCount(address _user) internal constant returns (uint itemsCount) {
         user storage userData = users[_user];
@@ -356,7 +361,7 @@ contract User is BirdBase {
     }
     
     function getEat(address _user) internal returns(uint){
-        uint _daily = (now-users[_user].regDate)/100;//86400;
+        uint _daily = (now-users[_user].regDate)/86400;
         users[_user].regDate = now;
         
         if (users[_user].maxItems >= (getItemsCount(_user) + _daily))
@@ -483,28 +488,40 @@ contract User is BirdBase {
 
 contract Arena is User{
     uint[] waitingFightBirds;
+    mapping (uint => uint) birdEquip;
     //uint[] winersRecovery;
     //uint[] looseRecovery;
-    uint constant timeToRecover = 100;//21600;
+    uint timeToRecover = 21600;
     
-    function findFighter(uint birdId) public {
+    function findFighter(uint birdId, uint _birdEquip) public {
         //проверка, что выставляется птица, которой он владеет
-        if (getUserByBirdId(birdId) == msg.sender && !checkWaiting(birdId)){
+        require(getUserByBirdId(birdId) == msg.sender && !checkWaiting(birdId));
+        require(_birdEquip == 0 || (getUserByEquipId(_birdEquip) == msg.sender));
             //поиск по уже выставленным
             bool nonWait = true;
             for (uint i=0; i<waitingFightBirds.length; i++){
                 if (allBirds[waitingFightBirds[i]].level == allBirds[birdId].level){
-                    fight(waitingFightBirds[i], birdId, i);
                     nonWait = false;
+                    uint birdOne = waitingFightBirds[i];
+                    delete birdEquip[birdOne];
+                    delWaiting(i);
+                    fight(birdOne, birdId);
                 }
             }
             
             //добавление в поиск
             if (nonWait) {
                 waitingFightBirds.push(birdId);
+                birdEquip[birdId] = _birdEquip;
             }
-            
+    }
+    
+    function delWaiting(uint i) private {
+        delete waitingFightBirds[i];
+        if (waitingFightBirds.length>1) {
+            waitingFightBirds[i] = waitingFightBirds[waitingFightBirds.length-1];
         }
+        waitingFightBirds.length--;
     }
     
     function checkWaiting(uint birdId) public constant returns(bool) {
@@ -526,20 +543,28 @@ contract Arena is User{
             return birdHP;
     }
     
-    function fight(uint firstBirdId, uint secondBirdId, uint _i) internal returns(bytes1){
-        uint fbHP = getRealHP(firstBirdId);//+
-        uint sbHP = getRealHP(secondBirdId);//+
+    function fight(uint firstBirdId, uint secondBirdId) internal returns(bytes1){
+        uint fbHP = getRealHP(firstBirdId);
+        uint sbHP = getRealHP(secondBirdId);
         bool draw = false;
         
-        //ограничить число итераций для экономии газа
-        //снос HP работает не совсем корректно
+        uint equipmentType1; uint equipmentType2;
+        uint value1; uint value2;
+        if (birdEquip[firstBirdId]!=0){
+            (equipmentType1, , value1) = getEquip(birdEquip[firstBirdId]);
+            if (equipmentType1 == 0)
+                fbHP = fbHP + value1;
+        }
+        if (birdEquip[firstBirdId]!=0) {
+            (equipmentType2, , value2) = getEquip(birdEquip[secondBirdId]);
+            if (equipmentType2 == 0)
+                sbHP = sbHP + value2;
+        }
+        
         while (fbHP!=0 && sbHP!=0) {
-            //wtf
-            /*allBirds[firstBirdId].zeroHpTime = now;
-            allBirds[secondBirdId].zeroHpTime = now;*/
             
             //first part
-            uint attackFB = getAttack(firstBirdId);
+            uint attackFB = getAttack(firstBirdId, birdEquip[firstBirdId]);
                 
             if (sbHP >= attackFB){
                 sbHP -= attackFB;
@@ -553,7 +578,7 @@ contract Arena is User{
             }
             
             //second part
-            uint attackSB = getAttack(secondBirdId);
+            uint attackSB = getAttack(secondBirdId, birdEquip[secondBirdId]);
 
             
             if (fbHP >= attackSB){
@@ -588,15 +613,20 @@ contract Arena is User{
         if (fbHP==0 && sbHP==0)
             afterFirght(firstBirdId, secondBirdId, draw);
         
-        // не работает    
-        delete waitingFightBirds[_i];
-        message(_i);
         message(waitingFightBirds.length);
     }
     
-    function getAttack(uint id) private returns(uint) {
-        uint birdStrength = getBirdStrength(id);
+    function getAttack(uint birdId, uint equipId) private returns(uint) {
+        uint birdStrength = getBirdStrength(birdId);
         uint res = rand(birdStrength, birdStrength*3, now);
+        uint equipmentType;
+        uint value;
+        if (equipId != 0) {
+            (equipmentType, , value) = getEquip(equipId);
+            if (equipmentType == 1)
+                res = res + value;
+        }
+            
         fightLog(res);
         return res;
     }
@@ -606,26 +636,26 @@ contract Arena is User{
         //TODO fix experience
         if (!draw) {
             allBirds[winId].win++;
-            allBirds[winId].experience +=5;
+            allBirds[winId].experience += getBirdHP(looseId)/11;
             
             allBirds[looseId].lose++;
-            allBirds[looseId].experience +=1;
+            allBirds[looseId].experience += getBirdHP(winId)/44;
             
         }
         else
         {
             allBirds[winId].draw++;
-            allBirds[winId].experience +=3;
+            allBirds[winId].experience += getBirdHP(looseId)/25;
             
             allBirds[looseId].draw++;
-            allBirds[looseId].experience +=3;
+            allBirds[looseId].experience += getBirdHP(winId)/25;
         }
         updateBirdLvl(winId);
         updateBirdLvl(looseId);
         fightResult(winId, looseId, draw);
     }
     
-    event fightResult(uint, uint, bool);
+    event fightResult(uint256 win, uint256 loose, bool draw);
     event fightLog(uint);
     event message(uint);
 }
@@ -660,6 +690,7 @@ contract Admin is Arena{
             potionPrice = 500000000000000000;
             upgrInvPrice = 500000000000000000;
             eatExp = 5;
+            
             
             initBirdsChar();
     }
@@ -830,6 +861,12 @@ contract Admin is Arena{
     modifier onlyModerator(){
         require(msg.sender == moderator);
         _;
+    }
+        
+    event testEvent(string mes, uint num);
+    function makeEvent(string a, uint b){
+        testEvent(a, b);
+        fightResult(7,77,true);
     }
     
     event pay (uint summ, address _address, uint stosks, uint balance);

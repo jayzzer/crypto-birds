@@ -76,13 +76,15 @@ contract Exchange{
         if (0 == _type){
             require(birdOrderId[_spec].seils == msg.sender);
             delete birdOrderId[_spec];
-            delete birdOrders[birdOrderId[_spec].id];
+            //delete birdOrders[birdOrderId[_spec].id];
+            delBirdOrder(birdOrderId[_spec].id);
         }
 
         else if (1 == _type){
             require(equipOrderId[_spec].seils == msg.sender);
             delete equipOrderId[_spec];
-            delete equipOrders[equipOrderId[_spec].id];
+            //delete equipOrders[equipOrderId[_spec].id];
+            delEquipOrder(equipOrderId[_spec].id);
         }
         
         else if (2 == _type){
@@ -125,7 +127,8 @@ contract Exchange{
         bird.birdTransfer(birdId, msg.sender);
         
         delete birdOrderId[birdId];
-        delete birdOrders[birdOrderId[birdId].id];
+        //delete birdOrders[birdOrderId[birdId].id];
+        delBirdOrder(birdOrderId[birdId].id);
     }
     
     function acceptEquipOrder(uint equipId) public payable {
@@ -137,7 +140,26 @@ contract Exchange{
         bird.equipTransfer(equipId, msg.sender);
         
         delete equipOrderId[equipId];
-        delete equipOrders[equipOrderId[equipId].id];
+        //delete equipOrders[equipOrderId[equipId].id];
+        delEquipOrder(equipOrderId[equipId].id);
+    }
+    
+    function delBirdOrder(uint i) private {
+        delete birdOrders[i];
+        
+        if (birdOrders.length>1) {
+            birdOrders[i] = birdOrders[birdOrders.length-1];
+        }
+        birdOrders.length--;
+    }
+    
+    function delEquipOrder(uint i) private {
+        delete equipOrders[i];
+        
+        if (equipOrders.length>1) {
+            equipOrders[i] = equipOrders[equipOrders.length-1];
+        }
+        equipOrders.length--;
     }
     
     event newOrder(string);
