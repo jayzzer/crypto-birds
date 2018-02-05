@@ -101,7 +101,7 @@ contract Exchange{
     }
     
     function getOrdersLength() public constant returns(uint) {
-        return birdOrderIndex;
+        return birdOrders.length;
     }
     
     function payForItem(address to, uint value) internal {
@@ -151,6 +151,7 @@ contract Exchange{
             birdOrders[i] = birdOrders[birdOrders.length-1];
         }
         birdOrders.length--;
+        birdOrderIndex--;
     }
     
     function delEquipOrder(uint i) private {
@@ -160,6 +161,7 @@ contract Exchange{
             equipOrders[i] = equipOrders[equipOrders.length-1];
         }
         equipOrders.length--;
+        equipOrderIndex--;
     }
     
     event newOrder(string);
