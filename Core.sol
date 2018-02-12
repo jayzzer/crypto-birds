@@ -251,6 +251,18 @@ contract BirdBase is Random, Achievments{
     
         return birdsChar[birdType-1].protection * foundBird.level;
     }
+    
+    function getBirdSpec (uint _birdId, uint spec) public returns(uint){
+        Bird storage foundBird = allBirds[_birdId];
+        uint birdType = getBirdType(_birdId);
+        
+        if (spec == 1){
+            return birdsChar[birdType-1].spec1;
+        }
+        if (spec == 2){
+            return birdsChar[birdType-1].spec2;
+        }
+    }
 }
 
 contract User is BirdBase {
@@ -382,6 +394,7 @@ contract User is BirdBase {
     }
     
     function buyPotion() external payable {
+        
         user storage userData = users[msg.sender];
         require(userData.maxItems > 0);//maxItems>0 - проверка на регистрацию
         require(userData.maxItems - getItemsCount(msg.sender) >= 1);
@@ -419,7 +432,7 @@ contract User is BirdBase {
         }
     }
     
-    //Работает пока с багами (повторяющийся рандом + хреновая проверка на переполнение склада)
+    //TODO 3 типа корзин
     function openBasket() external {
         user storage UserData = users[msg.sender];
         require(UserData.baskets >= 1);
@@ -436,7 +449,6 @@ contract User is BirdBase {
             
         //выпала еда
         UserData.eats++;
-        
         UserData.baskets--;
     }
     
@@ -621,13 +633,25 @@ contract Arena is User{
         uint res = rand(birdStrength, birdStrength*3, now);
         uint equipmentType;
         uint value;
+        uint lvl;
         if (equipId != 0) {
             (equipmentType, , value) = getEquip(equipId);
             if (equipmentType == 1)
                 res = res + value;
         }
+           
+        (,,,lvl,,,) = getBird(birdId);
+        uint ver = rand(1, 10, now);
+        
+        if (lvl > 10 && lvl < 21) {
+            if (ver > 0 && ver < 4)
+                res * getBirdSpec(birdId, 1);
+        }
+        if (lvl > 20) {
+            if (ver > 0 && ver < 5)
+                res * getBirdSpec(birdId, 2);
+        }
             
-        fightLog(res);
         return res;
     }
     
@@ -767,6 +791,18 @@ contract Admin is Arena{
             spec1: 13,
             spec2: 20
         }));
+    }
+    
+    function setBuscketPrice(uint price) public onlyModerator {
+        basketPrice = price;
+    }
+    
+    function setPotionPrice(uint price) public onlyModerator {
+        potionPrice = price;
+    }
+    
+    function setInventPrice(uint price) public onlyModerator {
+        upgrInvPrice = price;
     }
     
     function setExchAddress(address _exchAddress) public onlyModerator {
