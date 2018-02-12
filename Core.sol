@@ -97,10 +97,20 @@ contract BirdBase is Random, Achievments{
         uint value;
     }
     
-    function bornBird (address _user) internal returns(uint){
+    function bornBird (address _user, uint _type) internal returns(uint){
         Bird memory newBird;
         newBird.id = birdIndex++;
-        newBird.birdType = rand(0,108, newBird.id);
+        
+        //TODO fix random!!!
+        if (_type == 1) {
+            newBird.birdType = rand(0,108, newBird.id);
+        } 
+        else if (_type == 2) {
+            newBird.birdType = rand(40,108, newBird.id);
+        }
+        else if (_type == 3) {
+            newBird.birdType = rand(80,108, newBird.id);
+        }
         
         newBird.level = 1;
         newBird.experience = 0;
@@ -251,12 +261,27 @@ contract BirdBase is Random, Achievments{
     
         return birdsChar[birdType-1].protection * foundBird.level;
     }
+    
+    function getBirdSpec (uint _birdId, uint spec) public returns(uint){
+        Bird storage foundBird = allBirds[_birdId];
+        uint birdType = getBirdType(_birdId);
+        
+        if (spec == 1){
+            return birdsChar[birdType-1].spec1;
+        }
+        if (spec == 2){
+            return birdsChar[birdType-1].spec2;
+        }
+    }
 }
 
 contract User is BirdBase {
     uint initMaxItems;
     uint maxBaskets;
-    uint basketPrice;
+    uint egsCount;
+    uint basketPriceBronze;
+    uint basketPriceSilver;
+    uint basketPriceGold;
     uint potionPrice;
     uint upgrInvPrice;
     uint eatExp;
@@ -270,7 +295,9 @@ contract User is BirdBase {
         uint birds;
         uint equipments;
         uint eats;
-        uint baskets;
+        uint baskets_bronze;
+        uint baskets_silver;
+        uint baskets_gold;
         uint potions;
         uint regDate;
         
@@ -302,7 +329,9 @@ contract User is BirdBase {
             
             users[msg.sender].eats = 0;
             //users[msg.sender].eats = setEat(0);
-            users[msg.sender].baskets = 0;
+            users[msg.sender].baskets_bronze = 0;
+            users[msg.sender].baskets_silver = 0;
+            users[msg.sender].baskets_gold = 0;
             users[msg.sender].potions = 0;
             
             users[msg.sender].maxItems = initMaxItems;
@@ -333,9 +362,8 @@ contract User is BirdBase {
         return (users[_user].birds,
             users[_user].equipments,
             getEat(_user),
-            users[_user].baskets,
+            users[_user].baskets_bronze + users[_user].baskets_silver + users[_user].baskets_gold,
             users[_user].potions,
-            
             users[_user].maxItems,
             getItemsCount(_user)
         );
@@ -348,9 +376,15 @@ contract User is BirdBase {
         return userData.birds + 
             userData.equipments + 
             userData.eats + 
-            userData.baskets + 
+            userData.baskets_bronze + 
+            userData.baskets_silver +
+            userData.baskets_gold +
             userData.potions;
     }
+        
+    function getBuscketsCount(address _user) public constant returns(uint, uint, uint){
+        return (users[_user].baskets_bronze, users[_user].baskets_silver, users[_user].baskets_gold);
+    }    
         
     function getUserByID(uint _id) public constant returns (string name, string email, address _address) {
         return (users[usersId[_id]].name, users[usersId[_id]].email, usersId[_id]);
@@ -382,6 +416,7 @@ contract User is BirdBase {
     }
     
     function buyPotion() external payable {
+        
         user storage userData = users[msg.sender];
         require(userData.maxItems > 0);//maxItems>0 - проверка на регистрацию
         require(userData.maxItems - getItemsCount(msg.sender) >= 1);
@@ -398,37 +433,84 @@ contract User is BirdBase {
             userData.potions += (userData.maxItems - getItemsCount(msg.sender));
     }
     
-    function buyBasket() external payable {
-        require(msg.value >= basketPrice);
+    function buyBasket(uint _type) external payable {
         user storage userData = users[msg.sender];
+        
         require(userData.maxItems > 0);//maxItems>0 - проверка на регистрацию
         require(userData.maxItems - getItemsCount(msg.sender) >= 1);
+        
+        uint _backets;
+        
+        if (_type == 1) {
+            require(msg.value >= basketPriceBronze);
+            
+            _backets = msg.value/basketPriceBronze;
+            if ((userData.maxItems - getItemsCount(msg.sender)) >= _backets)
+                userData.baskets_bronze += _backets;
+            else
+                userData.baskets_bronze += (userData.maxItems - getItemsCount(msg.sender));
+        } 
+        else if (_type == 2) {
+            require(msg.value >= basketPriceSilver);
+            
+            _backets = msg.value/basketPriceSilver;
+            if ((userData.maxItems - getItemsCount(msg.sender)) >= _backets)
+                userData.baskets_silver += _backets;
+            else
+                userData.baskets_silver += (userData.maxItems - getItemsCount(msg.sender));
+        }
+        else if (_type == 3) {
+            require(msg.value >= basketPriceGold);
+            
+            _backets = msg.value/basketPriceGold;
+            if ((userData.maxItems - getItemsCount(msg.sender)) >= _backets)
+                userData.baskets_gold += _backets;
+            else
+                userData.baskets_gold += (userData.maxItems - getItemsCount(msg.sender));
+        }
         
         if (users[msg.sender].refer != msg.sender) {
             users[msg.sender].refer.transfer(msg.value/10);
         }
-        
-        if (msg.value >= basketPrice) {
-            uint _backets = msg.value/basketPrice;
-            if ((userData.maxItems - getItemsCount(msg.sender)) >= _backets)
-                userData.baskets += _backets;
-            else
-                userData.baskets += (userData.maxItems - getItemsCount(msg.sender));
-        } else {
-            error("Not enough ether to buy basket!", msg.sender);
-        }
     }
     
-    //Работает пока с багами (повторяющийся рандом + хреновая проверка на переполнение склада)
-    function openBasket() external {
+    //TODO 3 типа корзин
+    function openBasket(uint _type) external {
         user storage UserData = users[msg.sender];
-        require(UserData.baskets >= 1);
         require(UserData.maxItems - getItemsCount(msg.sender) >= 4);
         
-        for (uint i = 0; i < 1; i++ ) {
-            bornBird(msg.sender);
-            UserData.birds++;
+        if (_type == 1){
+            require(UserData.baskets_bronze >= egsCount);
+            
+            for (uint i = 0; i < egsCount; i++ ) {
+                bornBird(msg.sender, _type);
+                UserData.birds = UserData.birds + egsCount;
+            }
+            
+            UserData.baskets_bronze = UserData.baskets_bronze - egsCount;
         }
+        else if (_type == 2) {
+            require(UserData.baskets_silver >= egsCount);
+            
+            for (i = 0; i < egsCount; i++ ) {
+                bornBird(msg.sender, _type);
+                UserData.birds = UserData.birds + egsCount;
+            }
+            
+            UserData.baskets_silver = UserData.baskets_silver - egsCount;            
+        }        
+        else if (_type == 3) {
+            require(UserData.baskets_gold >= egsCount);
+            
+            for (i = 0; i < egsCount; i++ ) {
+                bornBird(msg.sender, _type);
+                UserData.birds = UserData.birds + egsCount;
+            }
+            
+            UserData.baskets_gold = UserData.baskets_gold - egsCount;             
+        }
+        
+
                 
         //выпала амуниция
         genEquipment(msg.sender);
@@ -436,8 +518,6 @@ contract User is BirdBase {
             
         //выпала еда
         UserData.eats++;
-        
-        UserData.baskets--;
     }
     
     function feedBird(uint _birdId, uint _count) external {
@@ -469,10 +549,18 @@ contract User is BirdBase {
                 users[msg.sender].eats--;
         }
         if (_type == 1) {
-            if (users[msg.sender].baskets > 0)
-                users[msg.sender].baskets--;
+            if (users[msg.sender].baskets_bronze > 0)
+                users[msg.sender].baskets_bronze--;
         }
         if (_type == 2) {
+            if (users[msg.sender].baskets_silver > 0)
+                users[msg.sender].baskets_silver--;
+        }
+        if (_type == 3) {
+            if (users[msg.sender].baskets_gold > 0)
+                users[msg.sender].baskets_gold--;
+        }
+        if (_type == 4) {
             if (users[msg.sender].potions > 0)
                 users[msg.sender].potions--;
         }
@@ -621,13 +709,25 @@ contract Arena is User{
         uint res = rand(birdStrength, birdStrength*3, now);
         uint equipmentType;
         uint value;
+        uint lvl;
         if (equipId != 0) {
             (equipmentType, , value) = getEquip(equipId);
             if (equipmentType == 1)
                 res = res + value;
         }
+           
+        (,,,lvl,,,) = getBird(birdId);
+        uint ver = rand(1, 10, now);
+        
+        if (lvl > 10 && lvl < 21) {
+            if (ver > 0 && ver < 4)
+                res * getBirdSpec(birdId, 1);
+        }
+        if (lvl > 20) {
+            if (ver > 0 && ver < 5)
+                res * getBirdSpec(birdId, 2);
+        }
             
-        fightLog(res);
         return res;
     }
     
@@ -686,7 +786,10 @@ contract Admin is Arena{
             eqIndex = 1;
             initMaxItems = 10;
             maxBaskets = 10;
-            basketPrice = 1000000000000000000;
+            egsCount = 1;
+            basketPriceBronze = 500000000000000000;
+            basketPriceSilver = 1000000000000000000;
+            basketPriceGold = 2000000000000000000;
             potionPrice = 500000000000000000;
             upgrInvPrice = 500000000000000000;
             eatExp = 5;
@@ -767,6 +870,30 @@ contract Admin is Arena{
             spec1: 13,
             spec2: 20
         }));
+    }
+    
+    function setBuscketPrice(uint price, uint _type) public onlyModerator {
+        if (_type == 1){
+            basketPriceBronze = price;
+        }
+        else if (_type == 2) {
+            basketPriceSilver = price;
+        }
+        else if (_type == 3) {
+            basketPriceGold = price;
+        }
+    }
+    
+    function getBuscketPrice() public constant returns(uint, uint, uint) {
+        return (basketPriceBronze, basketPriceSilver, basketPriceGold);
+    }
+    
+    function setPotionPrice(uint price) public onlyModerator {
+        potionPrice = price;
+    }
+    
+    function setInventPrice(uint price) public onlyModerator {
+        upgrInvPrice = price;
     }
     
     function setExchAddress(address _exchAddress) public onlyModerator {
