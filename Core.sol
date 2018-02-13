@@ -338,6 +338,29 @@ contract User is BirdBase {
         }
     }
     
+    function getUserBirdsID(address _user) external view returns(uint256[] ownerBirds){
+        uint tokenCount;
+        (tokenCount,,,,,) = getUserInventoryByAddress(_user);
+        
+        if (tokenCount == 0) {
+            return new uint256[](0);
+        } else {
+            uint256[] memory result = new uint256[](tokenCount);
+            uint256 resultIndex = 0;
+            
+            uint256 birdId;
+            
+            for (birdId = 0; birdId <= birdIndex; birdId++) {
+                if (birdOwner[birdId] == _user) {
+                    result[resultIndex] = birdId;
+                    resultIndex++;
+                }
+            }
+            
+            return result;
+        }
+    }
+    
     function getUserDataByAddress(address _user)
     external constant
     returns (
@@ -348,7 +371,7 @@ contract User is BirdBase {
     }
     
     function getUserInventoryByAddress(address _user) 
-    external constant 
+    public constant 
     returns (
         uint birds,
         uint equipments,
