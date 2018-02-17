@@ -360,8 +360,8 @@ contract User is BirdBase {
             return result;
         }
     }
-    
-    function getUserEquipsID(address _user) external view returns(uint256[] ownerEquips){
+
+        function getUserEquipsID(address _user) external view returns(uint256[] ownerEquips){
         uint tokenCount;
         uint fix;
         (fix,tokenCount,,,,) = getUserInventoryByAddress(_user);
@@ -384,8 +384,8 @@ contract User is BirdBase {
             return result;
         }
     }
-    
-    function getUserDataByAddress(address _user)
+
+ function getUserDataByAddress(address _user)
     external constant
     returns (
         string email,
@@ -630,8 +630,8 @@ contract Arena is User{
     
     function findFighter(uint birdId, uint _birdEquip) public {
         //проверка, что выставляется птица, которой он владеет
-        require(getUserByBirdId(birdId) == msg.sender && !checkWaiting(birdId));
-        require(_birdEquip == 0 || (getUserByEquipId(_birdEquip) == msg.sender));
+        require(getUserByBirdId(birdId) == msg.sender && !checkWaiting(birdId, 1));
+        require(_birdEquip == 0 || (getUserByEquipId(_birdEquip) == msg.sender && !checkWaiting(_birdEquip, 2)));
             //поиск по уже выставленным
             bool nonWait = true;
             for (uint i=0; i<waitingFightBirds.length; i++){
@@ -659,12 +659,21 @@ contract Arena is User{
         waitingFightBirds.length--;
     }
     
-    function checkWaiting(uint birdId) public constant returns(bool) {
+    function checkWaiting(uint birdId, uint _type) public constant returns(bool) {
         bool answer = false;
-        for (uint i=0; i<waitingFightBirds.length; i++){
-            if (waitingFightBirds[i] == birdId)
-                answer = true;
+        
+        if (_type == 1) {
+            for (uint i=0; i<waitingFightBirds.length; i++){
+                if (waitingFightBirds[i] == birdId)
+                    answer = true;
+            }
+        } else if (_type == 2 && birdId != 0){
+            for (i=0; i<waitingFightBirds.length; i++){
+                if (birdEquip[waitingFightBirds[i]] == birdId)
+                    answer = true;
+            }
         }
+        
         return answer;
     }
     
