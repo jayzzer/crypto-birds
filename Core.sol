@@ -808,10 +808,10 @@ contract Arena is User{
         }
         updateBirdLvl(winId);
         updateBirdLvl(looseId);
-        fightResult(winId, looseId, draw);
+        fightResult(now, winId, looseId, draw);
     }
     
-    event fightResult(uint256 win, uint256 loose, bool draw);
+    event fightResult(uint time, uint256 win, uint256 loose, bool draw);
     event fightLog(uint);
     event message(uint);
 }
@@ -1046,11 +1046,6 @@ contract Admin is Arena{
         _;
     }
         
-    event testEvent(string mes, uint num);
-    function makeEvent(string a, uint b){
-        testEvent(a, b);
-        fightResult(7,77,true);
-    }
     
     event pay (uint summ, address _address, uint stosks, uint balance);
     event createdContract(address owner);
