@@ -613,6 +613,24 @@ contract User is BirdBase {
         }
     }
     
+    function burnBird(uint _birdId) external {
+        require(birdOwner[_birdId] == msg.sender);
+        require(users[msg.sender].birds > 0);
+        
+        users[msg.sender].birds--;
+        delete allBirds[_birdId];
+        delete birdOwner[_birdId];
+    }
+    
+    function burnEquip(uint _equipId) external {
+        require(equipOwner[_equipId] == msg.sender);
+        require(users[msg.sender].equipments > 0);
+        
+        users[msg.sender].equipments--;
+        delete equips[_equipId];
+        delete equipOwner[_equipId];
+    }
+    
     function getRefer (address _user) public constant 
     returns (address refer) {
         return users[_user].refer;    
