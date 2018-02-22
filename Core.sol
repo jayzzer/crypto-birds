@@ -16,9 +16,7 @@ contract Random {
 }
 
 contract Achievments {
-    event storePurchases(uint n); //n-ое кол-во покупок в магазине
-    event exchangePurchases(uint n); //n-ое кол-во покупок на бирже
-    event exchangeSells(uint n); //n-ое кол-во продаж на бирже
+    event BasketPurchases(uint n); //n-ое кол-во покупок в магазине
     event birdLvlUp(uint n); //достижение питомцем n-го уровня
 }
 
@@ -221,10 +219,9 @@ contract BirdBase is Random, Achievments{
         for (uint i = foundBird.level; i < lvlTable.length; i++) {
             if (foundBird.experience >= lvlTable[i] && foundBird.experience < lvlTable[i+1]) {
                 foundBird.level = i+1;
+                birdLvlUp(foundBird.level);
             }
         }
-        
-        birdLvlUp(foundBird.level);
     }
     
     function getBirdType (uint _birdId) public constant
@@ -307,6 +304,8 @@ contract User is BirdBase {
     uint userIndex;
     mapping (address => user) users;
     mapping (uint => address) usersId;
+    
+    mapping (address => uint) basketPurchases;
     
     function regUser(string name, string email, address refer) external {
         bool nonReg = true;
@@ -519,6 +518,8 @@ contract User is BirdBase {
         if (users[msg.sender].refer != msg.sender) {
             users[msg.sender].refer.transfer(msg.value/10);
         }
+        
+        BasketPurchases(++basketPurchases[msg.sender]);
     }
     
     //TODO 3 типа корзин
