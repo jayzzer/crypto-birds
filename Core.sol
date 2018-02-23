@@ -16,10 +16,9 @@ contract Random {
 }
 
 contract Achievments {
-    event storePurchases(uint n); //n-ое кол-во покупок в магазине
-    event exchangePurchases(uint n); //n-ое кол-во покупок на бирже
-    event exchangeSells(uint n); //n-ое кол-во продаж на бирже
-    event birdLvlUp(uint n); //достижение питомцем n-го уровня
+    event BasketPurchases(address user, uint n); //n-ое кол-во покупок в магазине
+    event birdLvlUp(address user, uint n); //достижение питомцем n-го уровня
+    event OpenBasket(address user);
 }
 
 contract BirdBase is Random, Achievments{
@@ -139,21 +138,6 @@ contract BirdBase is Random, Achievments{
         return (allBirds[_id].win, allBirds[_id].lose, allBirds[_id].draw);
     }
     
-    //Больше не нужно, так как вынесли получение хар-ик в геттеры
-    // function initBirdChar(uint _birdId) internal {
-    //     Bird storage foundBird = allBirds[_birdId];
-        
-    //     for (uint i=0; i < birdsChar.length; i++) {
-    //         if (foundBird.birdType >= birdsChar[i].start && foundBird.birdType <= birdsChar[i].end) {
-    //             foundBird.totalHP = birdsChar[i].hp;
-    //             foundBird.strength = birdsChar[i].strength;
-    //             foundBird.protection = birdsChar[i].protection;
-                
-    //             break;
-    //         }
-    //     }
-    // }
-    
     function genEquipment(address _user) public returns(uint){
         uint lvlRand = rand(0, 930, equip.id);
         uint equipLvl = genEquipLvl(lvlRand);
@@ -221,10 +205,9 @@ contract BirdBase is Random, Achievments{
         for (uint i = foundBird.level; i < lvlTable.length; i++) {
             if (foundBird.experience >= lvlTable[i] && foundBird.experience < lvlTable[i+1]) {
                 foundBird.level = i+1;
+                birdLvlUp(msg.sender, foundBird.level);
             }
         }
-        
-        birdLvlUp(foundBird.level);
     }
     
     function getBirdType (uint _birdId) public constant
@@ -308,6 +291,8 @@ contract User is BirdBase {
     mapping (address => user) users;
     mapping (uint => address) usersId;
     
+    mapping (address => uint) basketPurchases;
+    
     function regUser(string name, string email, address refer) external {
         bool nonReg = true;
         
@@ -360,8 +345,8 @@ contract User is BirdBase {
             return result;
         }
     }
-
-        function getUserEquipsID(address _user) external view returns(uint256[] ownerEquips){
+    
+    function getUserEquipsID(address _user) external view returns(uint256[] ownerEquips){
         uint tokenCount;
         uint fix;
         (fix,tokenCount,,,,) = getUserInventoryByAddress(_user);
@@ -384,8 +369,8 @@ contract User is BirdBase {
             return result;
         }
     }
-
- function getUserDataByAddress(address _user)
+    
+    function getUserDataByAddress(address _user)
     external constant
     returns (
         string email,
@@ -478,6 +463,8 @@ contract User is BirdBase {
             userData.potions += _potions;
         else
             userData.potions += (userData.maxItems - getItemsCount(msg.sender));
+            
+        BasketPurchases(msg.sender, ++basketPurchases[msg.sender]);
     }
     
     function buyBasket(uint _type) external payable {
@@ -519,9 +506,10 @@ contract User is BirdBase {
         if (users[msg.sender].refer != msg.sender) {
             users[msg.sender].refer.transfer(msg.value/10);
         }
+        
+        BasketPurchases(msg.sender, ++basketPurchases[msg.sender]);
     }
     
-    //TODO 3 типа корзин
     function openBasket(uint _type) external {
         user storage UserData = users[msg.sender];
         require(UserData.maxItems - getItemsCount(msg.sender) >= 4);
@@ -565,6 +553,8 @@ contract User is BirdBase {
             
         //выпала еда
         UserData.eats++;
+        
+        OpenBasket(msg.sender);
     }
     
     function feedBird(uint _birdId, uint _count) external {
@@ -613,6 +603,24 @@ contract User is BirdBase {
         }
     }
     
+    function burnBird(uint _birdId) external {
+        require(birdOwner[_birdId] == msg.sender);
+        require(users[msg.sender].birds > 0);
+        
+        users[msg.sender].birds--;
+        delete allBirds[_birdId];
+        delete birdOwner[_birdId];
+    }
+    
+    function burnEquip(uint _equipId) external {
+        require(equipOwner[_equipId] == msg.sender);
+        require(users[msg.sender].equipments > 0);
+        
+        users[msg.sender].equipments--;
+        delete equips[_equipId];
+        delete equipOwner[_equipId];
+    }
+    
     function getRefer (address _user) public constant 
     returns (address refer) {
         return users[_user].refer;    
@@ -631,8 +639,8 @@ contract Arena is User{
     function findFighter(uint birdId, uint _birdEquip) public {
         //проверка, что выставляется птица, которой он владеет
         require(getUserByBirdId(birdId) == msg.sender && !checkWaiting(birdId, 1));
-        require(_birdEquip == 0 || (getUserByEquipId(_birdEquip) == msg.sender && !checkWaiting(_birdEquip, 2)));
-            //поиск по уже выставленным
+        require(_birdEquip == 0 || (getUserByEquipId(_birdEquip) == msg.sender && !checkWaiting(_birdEquip, 2)));           
+        //поиск по уже выставленным
             bool nonWait = true;
             for (uint i=0; i<waitingFightBirds.length; i++){
                 if (allBirds[waitingFightBirds[i]].level == allBirds[birdId].level){
