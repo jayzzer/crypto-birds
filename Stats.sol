@@ -15,416 +15,52 @@ contract stats{
     }
     
     function stats(){
-        initBirdsChar();
+        _initBirdsChar();
     }
     
-    BirdChar[] birdsChar;
+    //BirdChar[] birdsChar;
+    mapping(uint=>uint256[8]) _birdsChar;
     
     function getBirdsChar(uint i) public constant returns(uint256[8] stats) {
-        uint256[8] memory result;// = new uint256[];//(8);
-        result[0] = birdsChar[i].start;
-        result[1] = birdsChar[i].end;
-        
-        result[2] = birdsChar[i].hp;
-        result[3] = birdsChar[i].strength;
-        result[4] = birdsChar[i].strengthUpgr;
-        result[5] = birdsChar[i].protection;
-        
-        result[6] = birdsChar[i].spec1;
-        result[7] = birdsChar[i].spec2;
-        
+        uint256[8] memory result;
+        result = _birdsChar[i];
+
         return result;
     }
     
-    function initBirdsChar() public {
-        //Ducky
-        birdsChar.push(BirdChar({
-            start: 0,
-            end: 64,
-            hp: 10,
-            strength: 1,
-            strengthUpgr: 1,
-            protection: 1,
-            
-            spec1: 20,
-            spec2: 40
-        }));
+    function _initBirdsChar() private {
+        _birdsChar[0] = [0,64,10,1,1,1,20,40];
+        _birdsChar[1] = [65,129,8,2,1,1,15,35];
+        _birdsChar[2] = [130,194,12,1,1,2,15,35];
+        _birdsChar[3] = [195,259,9,1,1,1,15,40];
+        _birdsChar[4] = [260,324,10,2,1,1,13,30];
+        _birdsChar[5] = [325,389,8,3,2,1,13,20];
+        _birdsChar[6] = [390,454,12,1,1,3,15,20];
+        _birdsChar[7] = [455,519,9,3,2,1,15,25];
+        _birdsChar[8] = [520,584,14,1,1,4,20,35];
+        _birdsChar[9] = [585,649,14,1,1,4,20,35];
+        _birdsChar[10] = [650,714,13,2,1,2,15,30];
+        _birdsChar[11] = [715,779,11,3,2,2,13,15];
+        _birdsChar[12] = [780,844,8,4,2,2,13,20];
+        _birdsChar[13] = [845,909,12,3,2,1,13,20];
         
-        //Cockmagic
-        birdsChar.push(BirdChar({
-            start: 65,
-            end: 129,
-            hp: 8,
-            strength: 2,
-            strengthUpgr: 1,
-            protection: 1,
-            
-            spec1: 15,
-            spec2: 35
-        }));
+        _birdsChar[14] = [910,919,15,5,2,2,30,45];
+        _birdsChar[15] = [920,929,16,6,3,1,30,45];
+        _birdsChar[16] = [930,939,16,7,3,2,25,40];
+        _birdsChar[17] = [940,949,15,5,3,3,30,40];
+        _birdsChar[18] = [950,959,18,6,3,2,35,45];
+        _birdsChar[19] = [960,969,12,8,4,1,40,50];
+        _birdsChar[20] = [970,979,17,3,2,6,30,50];
+        _birdsChar[21] = [980,989,16,3,2,7,25,45];
         
-        //Gooosle
-        birdsChar.push(BirdChar({
-            start: 130,
-            end: 194,
-            hp: 12,
-            strength: 1,
-            strengthUpgr: 1,
-            protection: 2,
-            
-            spec1: 15,
-            spec2: 35
-        }));
+        _birdsChar[22] = [990,993,20,10,5,5,50,70];
+        _birdsChar[23] = [994,997,22,12,6,6,40,70];
+        _birdsChar[24] = [998,1001,24,9,4,9,60,90];
+        _birdsChar[25] = [1002,1005,24,10,5,4,50,80];
+        _birdsChar[26] = [1006,1009,20,8,4,10,60,80]; 
         
-        //Smelty Dover
-        birdsChar.push(BirdChar({
-            start: 195,
-            end: 259,
-            hp: 9,
-            strength: 1,
-            strengthUpgr: 1,
-            protection: 1,
-            
-            spec1: 15,
-            spec2: 40
-        }));
-        
-        //Hammer
-        birdsChar.push(BirdChar({
-            start: 260,
-            end: 324,
-            hp: 10,
-            strength: 2,
-            strengthUpgr: 1,
-            protection: 1,
-            
-            spec1: 13,
-            spec2: 30
-        }));
-        
-        //Noisy
-        birdsChar.push(BirdChar({
-            start: 325,
-            end: 389,
-            hp: 8,
-            strength: 3,
-            strengthUpgr: 2,
-            protection: 1,
-            
-            spec1: 13,
-            spec2: 20
-        }));
-        
-        //Hypnocock
-        birdsChar.push(BirdChar({
-            start: 390,
-            end: 454,
-            hp: 12,
-            strength: 1,
-            strengthUpgr: 1,
-            protection: 3,
-            
-            spec1: 15,
-            spec2: 20
-        }));
-        
-        //Вeadly boy
-        birdsChar.push(BirdChar({
-            start: 455,
-            end: 519,
-            hp: 9,
-            strength: 3,
-            strengthUpgr: 2,
-            protection: 1,
-            
-            spec1: 15,
-            spec2: 25
-        }));
-        
-        //Fatty Daddy
-        birdsChar.push(BirdChar({
-            start: 520,
-            end: 584,
-            hp: 14,
-            strength: 1,
-            strengthUpgr: 1,
-            protection: 4,
-            
-            spec1: 20,
-            spec2: 35
-        })); 
-        
-        //Miss Cuckoo
-        birdsChar.push(BirdChar({
-            start: 585,
-            end: 649,
-            hp: 14,
-            strength: 1,
-            strengthUpgr: 1,
-            protection: 4,
-            
-            spec1: 20,
-            spec2: 35
-        }));   
-        
-        //Smartass
-        birdsChar.push(BirdChar({
-            start: 650,
-            end: 714,
-            hp: 13,
-            strength: 2,
-            strengthUpgr: 1,
-            protection: 2,
-            
-            spec1: 15,
-            spec2: 30
-        }));
-        
-        //Blackswan
-        birdsChar.push(BirdChar({
-            start: 715,
-            end: 779,
-            hp: 11,
-            strength: 3,
-            strengthUpgr: 2,
-            protection: 2,
-            
-            spec1: 13,
-            spec2: 15
-        }));   
-        
-        //Speedfork
-        birdsChar.push(BirdChar({
-            start: 780,
-            end: 844,
-            hp: 8,
-            strength: 4,
-            strengthUpgr: 2,
-            protection: 2,
-            
-            spec1: 13,
-            spec2: 20
-        })); 
-        
-        //Deathfromthenest
-        birdsChar.push(BirdChar({
-            start: 845,
-            end: 909,
-            hp: 12,
-            strength: 3,
-            strengthUpgr: 2,
-            protection: 1,
-            
-            spec1: 13,
-            spec2: 20
-        }));
-        
-        //Brandon Lee
-        birdsChar.push(BirdChar({
-            start: 910,
-            end: 919,
-            hp: 15,
-            strength: 5,
-            strengthUpgr: 2,
-            protection: 2,
-            
-            spec1: 30,
-            spec2: 45
-        }));
-        
-        //Pinky
-        birdsChar.push(BirdChar({
-            start: 920,
-            end: 929,
-            hp: 16,
-            strength: 6,
-            strengthUpgr: 3,
-            protection: 1,
-            
-            spec1: 30,
-            spec2: 45
-        }));
-        
-        //Butcher
-        birdsChar.push(BirdChar({
-            start: 930,
-            end: 939,
-            hp: 16,
-            strength: 7,
-            strengthUpgr: 3,
-            protection: 2,
-            
-            spec1: 25,
-            spec2: 40
-        }));
-        
-        //Captain Sparrow
-        birdsChar.push(BirdChar({
-            start: 940,
-            end: 949,
-            hp: 15,
-            strength: 5,
-            strengthUpgr: 3,
-            protection: 3,
-            
-            spec1: 30,
-            spec2: 40
-        }));
-        
-        //Great snot
-        birdsChar.push(BirdChar({
-            start: 950,
-            end: 959,
-            hp: 18,
-            strength: 6,
-            strengthUpgr: 3,
-            protection: 2,
-            
-            spec1: 35,
-            spec2: 45
-        }));
-        
-        //Big Boss
-        birdsChar.push(BirdChar({
-            start: 960,
-            end: 969,
-            hp: 12,
-            strength: 8,
-            strengthUpgr: 4,
-            protection: 1,
-            
-            spec1: 40,
-            spec2: 50
-        }));
-        
-        //Banana
-        birdsChar.push(BirdChar({
-            start: 970,
-            end: 979,
-            hp: 17,
-            strength: 3,
-            strengthUpgr: 2,
-            protection: 6,
-            
-            spec1: 30,
-            spec2: 50
-        }));
-        
-        //Groundhead
-        birdsChar.push(BirdChar({
-            start: 980,
-            end: 989,
-            hp: 16,
-            strength: 3,
-            strengthUpgr: 2,
-            protection: 7,
-            
-            spec1: 25,
-            spec2: 45
-        }));
-        
-        //Mom's pretty
-        birdsChar.push(BirdChar({
-            start: 990,
-            end: 993,
-            hp: 20,
-            strength: 10,
-            strengthUpgr: 5,
-            protection: 5,
-            
-            spec1: 50,
-            spec2: 70
-        }));
-        
-        //Just toucan
-        birdsChar.push(BirdChar({
-            start: 994,
-            end: 997,
-            hp: 22,
-            strength: 12,
-            strengthUpgr: 6,
-            protection: 6,
-            
-            spec1: 40,
-            spec2: 70
-        }));
-        
-        //SWAG Bird
-        birdsChar.push(BirdChar({
-            start: 998,
-            end: 1001,
-            hp: 24,
-            strength: 9,
-            strengthUpgr: 4,
-            protection: 9,
-            
-            spec1: 60,
-            spec2: 90
-        }));
-        
-        //Red Bag
-        birdsChar.push(BirdChar({
-            start: 1002,
-            end: 1005,
-            hp: 24,
-            strength: 10,
-            strengthUpgr: 5,
-            protection: 4,
-            
-            spec1: 50,
-            spec2: 80
-        }));
-        
-        //Loveme!
-        birdsChar.push(BirdChar({
-            start: 1005,
-            end: 1008,
-            hp: 20,
-            strength: 8,
-            strengthUpgr: 4,
-            protection: 10,
-            
-            spec1: 60,
-            spec2: 80
-        }));
-        
-        //Black&White
-        birdsChar.push(BirdChar({
-            start: 1009,
-            end: 1010,
-            hp: 30,
-            strength: 15,
-            strengthUpgr: 7,
-            protection: 10,
-            
-            spec1: 80,
-            spec2: 100
-        }));    
-        
-        //Rainbow
-        birdsChar.push(BirdChar({
-            start: 1011,
-            end: 1012,
-            hp: 28,
-            strength: 14,
-            strengthUpgr: 7,
-            protection: 11,
-            
-            spec1: 80,
-            spec2: 100
-        }));
-        
-        //Scooter
-        birdsChar.push(BirdChar({
-            start: 1013,
-            end: 1014,
-            hp: 29,
-            strength: 12,
-            strengthUpgr: 12,
-            protection: 15,
-            
-            spec1: 80,
-            spec2: 100
-        }));
+        _birdsChar[27] = [1010,1111,30,15,7,10,80,100];
+        _birdsChar[28] = [1112,1113,28,14,7,11,80,100];
+        _birdsChar[29] = [1114,1115,29,12,12,15,80,100];
     }
 }

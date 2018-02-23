@@ -280,16 +280,6 @@ contract User is BirdBase {
     mapping (address => uint) basketPurchases;
     
     function regUser(string name, string email, address refer) external {
-        bool nonReg = true;
-        
-        for (uint i=0; i<=userIndex; i++){
-            if (keccak256(users[usersId[i]].email) == keccak256(email) || usersId[i] == msg.sender){
-                nonReg = false;
-                error('This email already registered', msg.sender);
-            }
-        }
-        
-        if (nonReg) {
             userIndex = userIndex+1;
             usersId[userIndex] = msg.sender;
             
@@ -306,7 +296,6 @@ contract User is BirdBase {
             users[msg.sender].potions = 0;
             
             users[msg.sender].maxItems = initMaxItems;
-        }
     }
     
     function getUserBirdsID(address _user) external view returns(uint256[] ownerBirds){
@@ -832,7 +821,6 @@ contract Admin is Arena{
     function Admin(address statAddress) public {
             owner = msg.sender;
             moderator = msg.sender;
-            createdContract(owner);
             
             owners[owner] = totalStocks;
             
@@ -931,7 +919,6 @@ contract Admin is Arena{
             for(uint i=0; i<ownerIndex; i++){
                 uint summ = _balance/100000*owners[ownerList[i]];
                 ownerList[i].transfer(summ);
-                pay(summ, ownerList[i], owners[ownerList[i]], this.balance);
             }
         }
     }
@@ -969,8 +956,4 @@ contract Admin is Arena{
         require(msg.sender == moderator);
         _;
     }
-        
-    
-    event pay (uint summ, address _address, uint stosks, uint balance);
-    event createdContract(address owner);
 }

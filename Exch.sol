@@ -19,6 +19,9 @@ contract Exchange{
     mapping(uint => Order) birdOrderId;
     mapping(uint => Order) equipOrderId;
     
+    mapping(address => uint) userSells;
+    mapping(address => uint) userPurchases;
+    
     struct Order{
         uint id;
         uint spec;
@@ -104,6 +107,14 @@ contract Exchange{
         return birdOrders.length;
     }
     
+    function getUserSells(address _user) external constant returns(uint sells) {
+        return userSells[_user];
+    }
+    
+    function getUserPurchases(address _user) external constant returns(uint purchases) {
+        return userPurchases[_user];
+    }
+    
     function payForItem(address to, uint value) internal {
         uint profit = value/20;
         to.transfer(value-profit);
@@ -126,6 +137,9 @@ contract Exchange{
         
         bird.birdTransfer(birdId, msg.sender);
         
+        exchangeSells(++userSells[to]);
+        exchangePurchases(++userPurchases[msg.sender]);
+        
         delete birdOrderId[birdId];
         //delete birdOrders[birdOrderId[birdId].id];
         delBirdOrder(birdOrderId[birdId].id);
@@ -138,6 +152,9 @@ contract Exchange{
         payForItem(to, msg.value);
             
         bird.equipTransfer(equipId, msg.sender);
+        
+        exchangeSells(++userSells[to]);
+        exchangePurchases(++userPurchases[msg.sender]);
         
         delete equipOrderId[equipId];
         //delete equipOrders[equipOrderId[equipId].id];
@@ -164,5 +181,7 @@ contract Exchange{
         equipOrderIndex--;
     }
     
+    event exchangePurchases(uint n); //n-ое кол-во покупок на бирже
+    event exchangeSells(uint n); //n-ое кол-во продаж на бирже
     event newOrder(string);
 }
