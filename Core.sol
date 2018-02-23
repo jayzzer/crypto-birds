@@ -53,6 +53,8 @@ contract BirdBase is Random, Achievments{
     uint birdIndex = 0;
     uint eqIndex = 1;
     
+    uint timeToRecover = 21600;
+    
     //id -> bird
     mapping (uint => Bird) allBirds;
     mapping (uint => address) birdOwner;
@@ -88,13 +90,13 @@ contract BirdBase is Random, Achievments{
         
         //TODO fix random!!!
         if (_type == 1) {
-            newBird.birdType = rand(0,1014, newBird.id);
+            newBird.birdType = getBirdType(rand(0,1014, newBird.id));
         } 
         else if (_type == 2) {
-            newBird.birdType = rand(200,1014, newBird.id);
+            newBird.birdType = getBirdType(rand(200,1014, newBird.id));
         }
         else if (_type == 3) {
-            newBird.birdType = rand(500,1014, newBird.id);
+            newBird.birdType = getBirdType(rand(500,1014, newBird.id));
         }
         
         newBird.level = 1;
@@ -170,19 +172,29 @@ contract BirdBase is Random, Achievments{
         return (equips[_id].equipmentType, equips[_id].itemLvl, equips[_id].value);
     }
     
+    function getRealHP(uint _birdId) public constant returns(uint) {
+        uint birdHP = getBirdHP(_birdId);
+        
+        if (now <= allBirds[_birdId].zeroHpTime){
+            return birdHP-(allBirds[_birdId].zeroHpTime - now)*birdHP/timeToRecover;
+        }
+        else
+            return birdHP;
+    }
+    
     function getBird(uint _id) public constant returns(
         address owner,
-        uint id,
+        uint strength,
+        uint protection,
         uint birdType,
         uint level,
         uint experience,
-        uint totalHP,
-        uint win
+        uint realHp
         /*uint lose,
         uint strength,
         uint protection*/
     ){
-        return (birdOwner[_id], allBirds[_id].id, allBirds[_id].birdType, allBirds[_id].level, allBirds[_id].experience,getBirdHP(_id), allBirds[_id].win/*,allBirds[_id].lose,allBirds[_id].strength,allBirds[_id].protection*/);
+        return (birdOwner[_id], getBirdStrength(_id), getBirdProtection(_id), allBirds[_id].birdType, allBirds[_id].level, allBirds[_id].experience, getRealHP(_id)/*,allBirds[_id].lose,allBirds[_id].strength,allBirds[_id].protection*/);
     }
     
     function updateBirdLvl(uint _birdId) internal {
@@ -210,7 +222,7 @@ contract BirdBase is Random, Achievments{
     function getBirdHP (uint _birdId) public constant 
     returns (uint hp) {
         Bird storage foundBird = allBirds[_birdId];
-        uint birdType = getBirdType(_birdId);
+        uint birdType = foundBird.birdType;
         
         return stats.getBirdsChar(birdType-1)[2] * foundBird.level;
     }
@@ -218,7 +230,7 @@ contract BirdBase is Random, Achievments{
     function getBirdStrength (uint _birdId) public constant
     returns (uint strength) {
         Bird storage foundBird = allBirds[_birdId];
-        uint birdType = getBirdType(_birdId);
+        uint birdType = foundBird.birdType;
         
         return stats.getBirdsChar(birdType-1)[3] + stats.getBirdsChar(birdType-1)[4]*(foundBird.level-1);
     }
@@ -226,14 +238,14 @@ contract BirdBase is Random, Achievments{
     function getBirdProtection (uint _birdId) public constant
     returns (uint protection) {
         Bird storage foundBird = allBirds[_birdId];
-        uint birdType = getBirdType(_birdId);
+        uint birdType = foundBird.birdType;
     
         return stats.getBirdsChar(birdType-1)[5] * foundBird.level;
     }
     
     function getBirdSpec (uint _birdId, uint spec) public returns(uint){
         Bird storage foundBird = allBirds[_birdId];
-        uint birdType = getBirdType(_birdId);
+        uint birdType = foundBird.birdType;
         
         if (spec == 1){
             return stats.getBirdsChar(birdType-1)[6];
@@ -609,7 +621,7 @@ contract Arena is User{
     mapping (uint => uint) birdEquip;
     //uint[] winersRecovery;
     //uint[] looseRecovery;
-    uint timeToRecover = 21600;
+    
     
     function findFighter(uint birdId, uint _birdEquip) public {
         //проверка, что выставляется птица, которой он владеет
@@ -664,16 +676,6 @@ contract Arena is User{
         }
         
         return answer;
-    }
-    
-    function getRealHP(uint _birdId) constant returns(uint) {
-        uint birdHP = getBirdHP(_birdId);
-        
-        if (now <= allBirds[_birdId].zeroHpTime){
-            return birdHP-(allBirds[_birdId].zeroHpTime - now)*birdHP/timeToRecover;
-        }
-        else
-            return birdHP;
     }
     
     function fight(uint firstBirdId, uint secondBirdId) internal returns(bytes1){
