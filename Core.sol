@@ -16,8 +16,9 @@ contract Random {
 }
 
 contract Achievments {
-    event BasketPurchases(uint n); //n-ое кол-во покупок в магазине
-    event birdLvlUp(uint n); //достижение питомцем n-го уровня
+    event BasketPurchases(address user, uint n); //n-ое кол-во покупок в магазине
+    event birdLvlUp(address user, uint n); //достижение питомцем n-го уровня
+    event OpenBasket(address user);
 }
 
 contract BirdBase is Random, Achievments{
@@ -46,22 +47,8 @@ contract BirdBase is Random, Achievments{
         929
     ];
     
-    //Хар-ки птицы
-    struct BirdChar {
-        //интервал, определяющий тип птицы
-        uint start; 
-        uint end;
-        
-        uint hp;
-        uint strength;
-        uint strengthUpgr;
-        uint protection;
-        
-        uint spec1;
-        uint spec2;
-    }
-    
-    BirdChar[] birdsChar;
+    Stats public stats;
+    //BirdChar[] birdsChar;
     
     uint birdIndex = 0;
     uint eqIndex = 1;
@@ -101,13 +88,13 @@ contract BirdBase is Random, Achievments{
         
         //TODO fix random!!!
         if (_type == 1) {
-            newBird.birdType = rand(0,108, newBird.id);
+            newBird.birdType = rand(0,1014, newBird.id);
         } 
         else if (_type == 2) {
-            newBird.birdType = rand(40,108, newBird.id);
+            newBird.birdType = rand(200,1014, newBird.id);
         }
         else if (_type == 3) {
-            newBird.birdType = rand(80,108, newBird.id);
+            newBird.birdType = rand(500,1014, newBird.id);
         }
         
         newBird.level = 1;
@@ -136,21 +123,6 @@ contract BirdBase is Random, Achievments{
     function getBirdStat(uint _id) constant returns(uint win, uint loose, uint draw) {
         return (allBirds[_id].win, allBirds[_id].lose, allBirds[_id].draw);
     }
-    
-    //Больше не нужно, так как вынесли получение хар-ик в геттеры
-    // function initBirdChar(uint _birdId) internal {
-    //     Bird storage foundBird = allBirds[_birdId];
-        
-    //     for (uint i=0; i < birdsChar.length; i++) {
-    //         if (foundBird.birdType >= birdsChar[i].start && foundBird.birdType <= birdsChar[i].end) {
-    //             foundBird.totalHP = birdsChar[i].hp;
-    //             foundBird.strength = birdsChar[i].strength;
-    //             foundBird.protection = birdsChar[i].protection;
-                
-    //             break;
-    //         }
-    //     }
-    // }
     
     function genEquipment(address _user) public returns(uint){
         uint lvlRand = rand(0, 930, equip.id);
@@ -219,7 +191,7 @@ contract BirdBase is Random, Achievments{
         for (uint i = foundBird.level; i < lvlTable.length; i++) {
             if (foundBird.experience >= lvlTable[i] && foundBird.experience < lvlTable[i+1]) {
                 foundBird.level = i+1;
-                birdLvlUp(foundBird.level);
+                birdLvlUp(msg.sender, foundBird.level);
             }
         }
     }
@@ -228,8 +200,8 @@ contract BirdBase is Random, Achievments{
     returns(uint birdType) {
         Bird storage foundBird = allBirds[_birdId];
         
-        for (uint i=0; i < birdsChar.length; i++) {
-            if (foundBird.birdType >= birdsChar[i].start && foundBird.birdType <= birdsChar[i].end) {
+        for (uint i=0; i < 30; i++) {
+            if (foundBird.birdType >= stats.getBirdsChar(i)[0] && foundBird.birdType <= stats.getBirdsChar(i)[1]) {
                 return i+1;
             }
         }
@@ -240,7 +212,7 @@ contract BirdBase is Random, Achievments{
         Bird storage foundBird = allBirds[_birdId];
         uint birdType = getBirdType(_birdId);
         
-        return birdsChar[birdType-1].hp * foundBird.level;
+        return stats.getBirdsChar(birdType-1)[2] * foundBird.level;
     }
     
     function getBirdStrength (uint _birdId) public constant
@@ -248,7 +220,7 @@ contract BirdBase is Random, Achievments{
         Bird storage foundBird = allBirds[_birdId];
         uint birdType = getBirdType(_birdId);
         
-        return birdsChar[birdType-1].strength + birdsChar[birdType-1].strengthUpgr*(foundBird.level-1);
+        return stats.getBirdsChar(birdType-1)[3] + stats.getBirdsChar(birdType-1)[4]*(foundBird.level-1);
     }
     
     function getBirdProtection (uint _birdId) public constant
@@ -256,7 +228,7 @@ contract BirdBase is Random, Achievments{
         Bird storage foundBird = allBirds[_birdId];
         uint birdType = getBirdType(_birdId);
     
-        return birdsChar[birdType-1].protection * foundBird.level;
+        return stats.getBirdsChar(birdType-1)[5] * foundBird.level;
     }
     
     function getBirdSpec (uint _birdId, uint spec) public returns(uint){
@@ -264,10 +236,10 @@ contract BirdBase is Random, Achievments{
         uint birdType = getBirdType(_birdId);
         
         if (spec == 1){
-            return birdsChar[birdType-1].spec1;
+            return stats.getBirdsChar(birdType-1)[6];
         }
         if (spec == 2){
-            return birdsChar[birdType-1].spec2;
+            return stats.getBirdsChar(birdType-1)[7];
         }
     }
 }
@@ -308,16 +280,6 @@ contract User is BirdBase {
     mapping (address => uint) basketPurchases;
     
     function regUser(string name, string email, address refer) external {
-        bool nonReg = true;
-        
-        for (uint i=0; i<=userIndex; i++){
-            if (keccak256(users[usersId[i]].email) == keccak256(email) || usersId[i] == msg.sender){
-                nonReg = false;
-                error('This email already registered', msg.sender);
-            }
-        }
-        
-        if (nonReg) {
             userIndex = userIndex+1;
             usersId[userIndex] = msg.sender;
             
@@ -334,7 +296,6 @@ contract User is BirdBase {
             users[msg.sender].potions = 0;
             
             users[msg.sender].maxItems = initMaxItems;
-        }
     }
     
     function getUserBirdsID(address _user) external view returns(uint256[] ownerBirds){
@@ -477,6 +438,8 @@ contract User is BirdBase {
             userData.potions += _potions;
         else
             userData.potions += (userData.maxItems - getItemsCount(msg.sender));
+            
+        BasketPurchases(msg.sender, ++basketPurchases[msg.sender]);
     }
     
     function buyBasket(uint _type) external payable {
@@ -519,10 +482,9 @@ contract User is BirdBase {
             users[msg.sender].refer.transfer(msg.value/10);
         }
         
-        BasketPurchases(++basketPurchases[msg.sender]);
+        BasketPurchases(msg.sender, ++basketPurchases[msg.sender]);
     }
     
-    //TODO 3 типа корзин
     function openBasket(uint _type) external {
         user storage UserData = users[msg.sender];
         require(UserData.maxItems - getItemsCount(msg.sender) >= 4);
@@ -566,6 +528,8 @@ contract User is BirdBase {
             
         //выпала еда
         UserData.eats++;
+        
+        OpenBasket(msg.sender);
     }
     
     function feedBird(uint _birdId, uint _count) external {
@@ -649,12 +613,18 @@ contract Arena is User{
     
     function findFighter(uint birdId, uint _birdEquip) public {
         //проверка, что выставляется птица, которой он владеет
-        require(getUserByBirdId(birdId) == msg.sender && !checkWaiting(birdId));
-        require(_birdEquip == 0 || (getUserByEquipId(_birdEquip) == msg.sender));
-            //поиск по уже выставленным
+        require(getUserByBirdId(birdId) == msg.sender && !checkWaiting(birdId, 1));
+        require(_birdEquip == 0 || (getUserByEquipId(_birdEquip) == msg.sender && !checkWaiting(_birdEquip, 2)));           
+        //поиск по уже выставленным
             bool nonWait = true;
             for (uint i=0; i<waitingFightBirds.length; i++){
-                if (allBirds[waitingFightBirds[i]].level == allBirds[birdId].level){
+                
+                if (
+                    ((allBirds[waitingFightBirds[i]].level == allBirds[birdId].level) && allBirds[birdId].level<=5)
+                    || ((allBirds[birdId].level > 5) &&
+                    ((allBirds[birdId].level-3 <= allBirds[waitingFightBirds[i]].level) && 
+                    (allBirds[birdId].level+3 >= allBirds[waitingFightBirds[i]].level)))
+                ){
                     nonWait = false;
                     uint birdOne = waitingFightBirds[i];
                     delete birdEquip[birdOne];
@@ -678,12 +648,21 @@ contract Arena is User{
         waitingFightBirds.length--;
     }
     
-    function checkWaiting(uint birdId) public constant returns(bool) {
+    function checkWaiting(uint birdId, uint _type) public constant returns(bool) {
         bool answer = false;
-        for (uint i=0; i<waitingFightBirds.length; i++){
-            if (waitingFightBirds[i] == birdId)
-                answer = true;
+        
+        if (_type == 1) {
+            for (uint i=0; i<waitingFightBirds.length; i++){
+                if (waitingFightBirds[i] == birdId)
+                    answer = true;
+            }
+        } else if (_type == 2 && birdId != 0){
+            for (i=0; i<waitingFightBirds.length; i++){
+                if (birdEquip[waitingFightBirds[i]] == birdId)
+                    answer = true;
+            }
         }
+        
         return answer;
     }
     
@@ -818,12 +797,16 @@ contract Arena is User{
         }
         updateBirdLvl(winId);
         updateBirdLvl(looseId);
-        fightResult(winId, looseId, draw);
+        fightResult(now, winId, looseId, draw);
     }
     
-    event fightResult(uint256 win, uint256 loose, bool draw);
+    event fightResult(uint time, uint256 win, uint256 loose, bool draw);
     event fightLog(uint);
     event message(uint);
+}
+
+contract Stats{
+    function getBirdsChar(uint i) public constant returns(uint256[8] stats);
 }
 
 contract Admin is Arena{
@@ -835,16 +818,15 @@ contract Admin is Arena{
     address[20] ownerList;
     address exchAddress;
     
-    function Admin() public {
+    function Admin(address statAddress) public {
             owner = msg.sender;
             moderator = msg.sender;
-            createdContract(owner);
             
             owners[owner] = totalStocks;
             
             ownerList[0] = msg.sender;
             
-            
+            stats = Stats(statAddress);
             //инициализация переменных
             userIndex = 0;
             ownerIndex = 1;
@@ -859,83 +841,6 @@ contract Admin is Arena{
             potionPrice = 500000000000000000;
             upgrInvPrice = 500000000000000000;
             eatExp = 5;
-            
-            
-            initBirdsChar();
-    }
-    
-    function initBirdsChar() internal {
-        birdsChar.push(BirdChar({
-            start: 0,
-            end: 17,
-            hp: 10,
-            strength: 1,
-            strengthUpgr: 1,
-            protection: 1,
-            
-            spec1: 20,
-            spec2: 40
-        }));
-        
-        birdsChar.push(BirdChar({
-            start: 18,
-            end: 35,
-            hp: 8,
-            strength: 2,
-            strengthUpgr: 1,
-            protection: 1,
-            
-            spec1: 15,
-            spec2: 35
-        }));
-        
-        birdsChar.push(BirdChar({
-            start: 36,
-            end: 53,
-            hp: 12,
-            strength: 1,
-            strengthUpgr: 1,
-            protection: 2,
-            
-            spec1: 15,
-            spec2: 35
-        }));
-        
-        birdsChar.push(BirdChar({
-            start: 54,
-            end: 71,
-            hp: 9,
-            strength: 1,
-            strengthUpgr: 1,
-            protection: 1,
-            
-            spec1: 15,
-            spec2: 40
-        }));
-        
-        birdsChar.push(BirdChar({
-            start: 72,
-            end: 89,
-            hp: 10,
-            strength: 2,
-            strengthUpgr: 1,
-            protection: 1,
-            
-            spec1: 13,
-            spec2: 30
-        }));
-        
-        birdsChar.push(BirdChar({
-            start: 90,
-            end: 107,
-            hp: 8,
-            strength: 3,
-            strengthUpgr: 2,
-            protection: 1,
-            
-            spec1: 13,
-            spec2: 20
-        }));
     }
     
     function setBuscketPrice(uint price, uint _type) public onlyModerator {
@@ -1014,7 +919,6 @@ contract Admin is Arena{
             for(uint i=0; i<ownerIndex; i++){
                 uint summ = _balance/100000*owners[ownerList[i]];
                 ownerList[i].transfer(summ);
-                pay(summ, ownerList[i], owners[ownerList[i]], this.balance);
             }
         }
     }
@@ -1031,9 +935,6 @@ contract Admin is Arena{
         return moderator;
     }
     
-    // function setInitValues(uint maxItems) public onlyModerator {
-    //     initMaxItems = maxItems;
-    // }
     
     //Только создатель
     modifier onlyOwner()
@@ -1055,13 +956,4 @@ contract Admin is Arena{
         require(msg.sender == moderator);
         _;
     }
-        
-    event testEvent(string mes, uint num);
-    function makeEvent(string a, uint b){
-        testEvent(a, b);
-        fightResult(7,77,true);
-    }
-    
-    event pay (uint summ, address _address, uint stosks, uint balance);
-    event createdContract(address owner);
 }
