@@ -88,15 +88,19 @@ contract BirdBase is Random, Achievments{
         Bird memory newBird;
         newBird.id = birdIndex++;
         
+        uint randNum;
         //TODO fix random!!!
         if (_type == 1) {
-            newBird.birdType = getBirdType(rand(0,1014, newBird.id));
+            randNum = rand(0,1014, newBird.id);
+            newBird.birdType = getBirdType(randNum);
         } 
         else if (_type == 2) {
-            newBird.birdType = getBirdType(rand(200,1014, newBird.id));
+            randNum = rand(200,1014, newBird.id);
+            newBird.birdType = getBirdType(randNum);
         }
         else if (_type == 3) {
-            newBird.birdType = getBirdType(rand(500,1014, newBird.id));
+            randNum = rand(500,1014, newBird.id);
+            newBird.birdType = getBirdType(randNum);
         }
         
         newBird.level = 1;
@@ -208,12 +212,10 @@ contract BirdBase is Random, Achievments{
         }
     }
     
-    function getBirdType (uint _birdId) public constant
+    function getBirdType (uint _birdType) public constant
     returns(uint birdType) {
-        Bird storage foundBird = allBirds[_birdId];
-        
         for (uint i=0; i < 30; i++) {
-            if (foundBird.birdType >= stats.getBirdsChar(i)[0] && foundBird.birdType <= stats.getBirdsChar(i)[1]) {
+            if (_birdType >= stats.getBirdsChar(i)[0] && _birdType <= stats.getBirdsChar(i)[1]) {
                 return i+1;
             }
         }
