@@ -40,6 +40,7 @@ contract Exchange{
         // продажа птицы
         if (_type == 0){
             require(bird.getUserByBirdId(_spec) == msg.sender);
+            require(!isBirdOnExch(_spec));
             
            _ord = Order({
                 id: birdOrderIndex,
@@ -93,6 +94,11 @@ contract Exchange{
         else if (2 == _type){
             
         }
+    }
+    
+    function isBirdOnExch(uint _birdId) public constant returns(bool) {
+        if (birdOrderId[_birdId].date != 0 ) return true;
+        return false;
     }
     
     function getByBirdId(uint birdId) public constant returns(address seils, uint price, uint date) {
