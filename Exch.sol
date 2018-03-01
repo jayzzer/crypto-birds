@@ -109,6 +109,10 @@ contract Exchange{
         return (birdOrders[index].seils, birdOrders[index].price, birdOrders[index].date, birdOrders[index].spec);
     }
     
+    function getByEquipOrderId(uint index) public constant returns(address seils, uint price, uint date, uint spec) {
+        return (equipOrders[index].seils, equipOrders[index].price, equipOrders[index].date, equipOrders[index].spec);
+    }
+    
     function getOrdersLength() public constant returns(uint) {
         return birdOrders.length;
     }
