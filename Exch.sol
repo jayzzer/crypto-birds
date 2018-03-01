@@ -57,6 +57,7 @@ contract Exchange{
         // продажа экипировки
         else if (_type == 1) {
             require(bird.getUserByEquipId(_spec) == msg.sender);
+            require(!isEquipOnExch(_spec));
             
             _ord = Order({
                 id: equipOrderIndex,
@@ -70,10 +71,7 @@ contract Exchange{
             equipOrderIndex = equipOrderIndex + 1;
             equipOrderId[_spec] = _ord;
         } 
-        // продажа корзин
-        else if (_type == 2){
-            
-        }
+
     }
     
     function closeOrder(uint _type, uint _spec) public {
@@ -91,13 +89,15 @@ contract Exchange{
             delEquipOrder(equipOrderId[_spec].id);
         }
         
-        else if (2 == _type){
-            
-        }
     }
     
     function isBirdOnExch(uint _birdId) public constant returns(bool) {
         if (birdOrderId[_birdId].date != 0 ) return true;
+        return false;
+    }
+    
+    function isEquipOnExch(uint _equipId) public constant returns(bool) {
+        if (equipOrderId[_equipId].date != 0 ) return true;
         return false;
     }
     
@@ -111,6 +111,10 @@ contract Exchange{
     
     function getOrdersLength() public constant returns(uint) {
         return birdOrders.length;
+    }
+    
+    function getEquipOrdersLength() public constant returns(uint) {
+        return equipOrders.length;
     }
     
     function getUserSells(address _user) external constant returns(uint sells) {
@@ -143,8 +147,8 @@ contract Exchange{
         
         bird.birdTransfer(birdId, msg.sender);
         
-        exchangeSells(++userSells[to]);
-        exchangePurchases(++userPurchases[msg.sender]);
+        exchangeSells(msg.sender, ++userSells[to]);
+        exchangePurchases(msg.sender, ++userPurchases[msg.sender]);
         
         delete birdOrderId[birdId];
         //delete birdOrders[birdOrderId[birdId].id];
@@ -159,8 +163,8 @@ contract Exchange{
             
         bird.equipTransfer(equipId, msg.sender);
         
-        exchangeSells(++userSells[to]);
-        exchangePurchases(++userPurchases[msg.sender]);
+        exchangeSells(msg.sender, ++userSells[to]);
+        exchangePurchases(msg.sender,++userPurchases[msg.sender]);
         
         delete equipOrderId[equipId];
         //delete equipOrders[equipOrderId[equipId].id];
@@ -187,7 +191,6 @@ contract Exchange{
         equipOrderIndex--;
     }
     
-    event exchangePurchases(uint n); //n-ое кол-во покупок на бирже
-    event exchangeSells(uint n); //n-ое кол-во продаж на бирже
-    event newOrder(string);
+    event exchangePurchases(address user, uint n); //n-ое кол-во покупок на бирже
+    event exchangeSells(address user, uint n); //n-ое кол-во продаж на бирже
 }

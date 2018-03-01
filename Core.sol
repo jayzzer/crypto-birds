@@ -24,10 +24,35 @@ contract Achievments {
 contract BirdBase is Random, Achievments{
     uint[] lvlTable = [
         0,
+        2,
+        3,
+        4,
         5,
-        50,
-        100,
-        250
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30
     ];
     
     uint[] equipProbab = [
@@ -557,6 +582,12 @@ contract User is BirdBase {
         updateBirdLvl(_birdId);
     }
     
+    function potionBird(uint _birdId) public {
+        require(users[msg.sender].potions>0);
+        users[msg.sender].potions -= 1;
+        allBirds[_birdId].zeroHpTime = now;
+    }
+    
     function getUserByBirdId(uint _birdId) public constant returns (address) {
         return birdOwner[_birdId];
     }
@@ -592,23 +623,7 @@ contract User is BirdBase {
         }
     }
     
-    function burnBird(uint _birdId) external {
-        require(birdOwner[_birdId] == msg.sender);
-        require(users[msg.sender].birds > 0);
-        
-        users[msg.sender].birds--;
-        delete allBirds[_birdId];
-        delete birdOwner[_birdId];
-    }
-    
-    function burnEquip(uint _equipId) external {
-        require(equipOwner[_equipId] == msg.sender);
-        require(users[msg.sender].equipments > 0);
-        
-        users[msg.sender].equipments--;
-        delete equips[_equipId];
-        delete equipOwner[_equipId];
-    }
+
     
     function getRefer (address _user) public constant 
     returns (address refer) {
@@ -859,8 +874,8 @@ contract Admin is Arena{
         }
     }
     
-    function getBuscketPrice() public constant returns(uint, uint, uint) {
-        return (basketPriceBronze, basketPriceSilver, basketPriceGold);
+    function getBuscketPrice() public constant returns(uint, uint, uint, uint, uint) {
+        return (basketPriceBronze, basketPriceSilver, basketPriceGold, potionPrice, upgrInvPrice);
     }
     
     function setPotionPrice(uint price) public onlyModerator {
@@ -879,7 +894,7 @@ contract Admin is Arena{
         //проверка - запрос от биржи?
         require(msg.sender == exchAddress);
         error("fsffs", msg.sender);
-        require(getItemsCount(newOwner) < users[newOwner].maxItems);
+        require(getItemsCount(newOwner) < users[newOwner].maxItems || newOwner == owner);
 
         users[birdOwner[birdId]].birds--;
         birdOwner[birdId] = newOwner;
@@ -889,12 +904,32 @@ contract Admin is Arena{
     function equipTransfer(uint equipId, address newOwner) public {
         //проверка - запрос от биржи?
         require(msg.sender == exchAddress);
-        require(getItemsCount(newOwner) < users[newOwner].maxItems);
+        require(getItemsCount(newOwner) < users[newOwner].maxItems || newOwner == owner);
 
         users[equipOwner[equipId]].equipments--;
         equipOwner[equipId] = newOwner;
         users[newOwner].equipments++;
     } 
+    
+    function burnBird(uint _birdId) external {
+        require(birdOwner[_birdId] == msg.sender);
+        require(users[msg.sender].birds > 0);
+        
+        birdTransfer(_birdId, owner);
+        users[msg.sender].birds--;
+        //delete allBirds[_birdId];
+        //delete birdOwner[_birdId];
+    }
+    
+    function burnEquip(uint _equipId) external {
+        require(equipOwner[_equipId] == msg.sender);
+        require(users[msg.sender].equipments > 0);
+        
+        equipTransfer(_equipId, owner);
+        users[msg.sender].equipments--;
+        //delete equips[_equipId];
+        //delete equipOwner[_equipId];
+    }
     
     function transferStocks(address _to, uint _balance) public {
         if (owners[msg.sender] >= _balance){
