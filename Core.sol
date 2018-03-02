@@ -892,9 +892,8 @@ contract Admin is Arena{
     
     function birdTransfer(uint birdId, address newOwner) public {
         //проверка - запрос от биржи?
-        require(msg.sender == exchAddress);
-        error("fsffs", msg.sender);
-        require(getItemsCount(newOwner) < users[newOwner].maxItems || newOwner == owner);
+        require(msg.sender == exchAddress || newOwner == owner);
+        require(getItemsCount(newOwner) < users[newOwner].maxItems);
 
         users[birdOwner[birdId]].birds--;
         birdOwner[birdId] = newOwner;
@@ -903,7 +902,7 @@ contract Admin is Arena{
     
     function equipTransfer(uint equipId, address newOwner) public {
         //проверка - запрос от биржи?
-        require(msg.sender == exchAddress);
+        require(msg.sender == exchAddress || newOwner == owner);
         require(getItemsCount(newOwner) < users[newOwner].maxItems || newOwner == owner);
 
         users[equipOwner[equipId]].equipments--;
@@ -916,9 +915,6 @@ contract Admin is Arena{
         require(users[msg.sender].birds > 0);
         
         birdTransfer(_birdId, owner);
-        users[msg.sender].birds--;
-        //delete allBirds[_birdId];
-        //delete birdOwner[_birdId];
     }
     
     function burnEquip(uint _equipId) external {
@@ -926,9 +922,6 @@ contract Admin is Arena{
         require(users[msg.sender].equipments > 0);
         
         equipTransfer(_equipId, owner);
-        users[msg.sender].equipments--;
-        //delete equips[_equipId];
-        //delete equipOwner[_equipId];
     }
     
     function transferStocks(address _to, uint _balance) public {
