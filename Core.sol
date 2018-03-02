@@ -893,7 +893,7 @@ contract Admin is Arena{
     function birdTransfer(uint birdId, address newOwner) public {
         //проверка - запрос от биржи?
         require(msg.sender == exchAddress || newOwner == owner);
-        require(getItemsCount(newOwner) < users[newOwner].maxItems);
+        require(getItemsCount(newOwner) < users[newOwner].maxItems || newOwner == owner);
 
         users[birdOwner[birdId]].birds--;
         birdOwner[birdId] = newOwner;
