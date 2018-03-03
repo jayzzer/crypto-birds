@@ -22,57 +22,8 @@ contract Achievments {
 }
 
 contract BirdBase is Random, Achievments{
-    uint[] lvlTable = [
-        0,
-        10,
-        25,
-        50,
-        100,
-        250,
-        500,
-        1000,
-        1600,
-        2300,
-        3100,
-        4000,
-        5000,
-        6100,
-        7300,
-        8600,
-        10000,
-        11500,
-        13100,
-        14800,
-        16600,
-        18500,
-        20500,
-        22600,
-        24700,
-        26900,
-        29200,
-        31600,
-        34100,
-        36700
-    ];
-    
-    uint[] equipProbab = [
-        0,
-        234,
-        468,
-        703,
-        
-        770,
-        833,
-        896,
-        
-        906,
-        916,
-        926,
-        
-        929
-    ];
-    
     Stats public stats;
+    Exch public exch;
     //BirdChar[] birdsChar;
     
     uint birdIndex = 0;
@@ -157,7 +108,7 @@ contract BirdBase is Random, Achievments{
     
     function genEquipment(address _user) public returns(uint){
         uint lvlRand = rand(0, 930, equip.id);
-        uint equipLvl = genEquipLvl(lvlRand);
+        uint equipLvl = exch.genEquipLvl(lvlRand);
         
         Equipment memory equip = Equipment({
             id: eqIndex++,
@@ -177,18 +128,6 @@ contract BirdBase is Random, Achievments{
     function getEquipValue(uint lvl) internal constant 
     returns(uint) {
         return (lvl+1)*5;
-    }
-    
-    function genEquipLvl(uint randNum) internal constant returns (uint) {
-        uint resLvl = 1;
-        for (uint i = 0; i < equipProbab.length; i++) {
-            if (randNum >= equipProbab[i] && randNum < equipProbab[i+1]) {
-                resLvl = i+1;
-                break;
-            }
-        }
-        
-        return resLvl;
     }
     
     function getEquip(uint _id) 
@@ -229,12 +168,9 @@ contract BirdBase is Random, Achievments{
     function updateBirdLvl(uint _birdId) internal {
         Bird storage foundBird = allBirds[_birdId];
         
-        for (uint i = foundBird.level; i < lvlTable.length; i++) {
-            if (foundBird.experience >= lvlTable[i] && foundBird.experience < lvlTable[i+1]) {
-                foundBird.level = i+1;
-                birdLvlUp(msg.sender, foundBird.level);
-            }
-        }
+        exch.getBirdLvl(foundBird.level, foundBird.experience);
+        
+        birdLvlUp(msg.sender, foundBird.level);
     }
     
     function getBirdType (uint _birdType) public constant
@@ -828,6 +764,11 @@ contract Stats{
     function getBirdsChar(uint i) public constant returns(uint256[8] stats);
 }
 
+contract Exch{
+    function genEquipLvl(uint randNum) public constant returns (uint);
+    function getBirdLvl(uint _level, uint _exp) public constant returns(uint);
+}
+
 contract Admin is Arena{
     address owner;
     address moderator;
@@ -888,6 +829,7 @@ contract Admin is Arena{
     
     function setExchAddress(address _exchAddress) public onlyModerator {
         exchAddress = _exchAddress;
+        exch = Exch(exchAddress);
     }
     
     function birdTransfer(uint birdId, address newOwner) public {

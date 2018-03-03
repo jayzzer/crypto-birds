@@ -9,6 +9,56 @@ contract BirdCore{
 }
 
 contract Exchange{
+    uint[] lvlTable = [
+        0,
+        10,
+        25,
+        50,
+        100,
+        250,
+        500,
+        1000,
+        1600,
+        2300,
+        3100,
+        4000,
+        5000,
+        6100,
+        7300,
+        8600,
+        10000,
+        11500,
+        13100,
+        14800,
+        16600,
+        18500,
+        20500,
+        22600,
+        24700,
+        26900,
+        29200,
+        31600,
+        34100,
+        36700
+    ];
+    
+    uint[] equipProbab = [
+        0,
+        234,
+        468,
+        703,
+        
+        770,
+        833,
+        896,
+        
+        906,
+        916,
+        926,
+        
+        929
+    ];
+    
     BirdCore public bird;
     Order[] birdOrders;
     uint birdOrderIndex = 0;
@@ -33,6 +83,27 @@ contract Exchange{
     function Exchange(address _core) public {
         bird = BirdCore(_core);
         coreAddress = _core;
+    }
+    
+    function genEquipLvl(uint randNum) public constant returns (uint) {
+        uint resLvl = 1;
+
+        for (uint i = 0; i < equipProbab.length; i++) {
+            if (randNum >= equipProbab[i] && randNum < equipProbab[i+1]) {
+                resLvl = i+1;
+                break;
+            }
+        }
+        
+        return resLvl;
+    }
+    
+    function getBirdLvl(uint _level, uint _exp) public constant returns(uint) {
+        for (uint i = _level; i < lvlTable.length; i++) {
+            if (_exp >= lvlTable[i] && _exp < lvlTable[i+1]) {
+                return i+1;
+            }
+        }
     }
     
     function addNewOrder(uint _type ,uint _spec, uint _price) public {
