@@ -24,35 +24,35 @@ contract Achievments {
 contract BirdBase is Random, Achievments{
     uint[] lvlTable = [
         0,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
         10,
-        11,
-        12,
-        13,
-        14,
-        15,
-        16,
-        17,
-        18,
-        19,
-        20,
-        21,
-        22,
-        23,
-        24,
         25,
-        26,
-        27,
-        28,
-        29,
-        30
+        50,
+        100,
+        250,
+        500,
+        1000,
+        1600,
+        2300,
+        3100,
+        4000,
+        5000,
+        6100,
+        7300,
+        8600,
+        10000,
+        11500,
+        13100,
+        14800,
+        16600,
+        18500,
+        20500,
+        22600,
+        24700,
+        26900,
+        29200,
+        31600,
+        34100,
+        36700
     ];
     
     uint[] equipProbab = [
@@ -120,11 +120,11 @@ contract BirdBase is Random, Achievments{
             newBird.birdType = getBirdType(randNum);
         } 
         else if (_type == 2) {
-            randNum = rand(200,1014, newBird.id);
+            randNum = rand(0,814, newBird.id)+200;
             newBird.birdType = getBirdType(randNum);
         }
         else if (_type == 3) {
-            randNum = rand(500,1014, newBird.id);
+            randNum = rand(0,514, newBird.id)+500;
             newBird.birdType = getBirdType(randNum);
         }
         
@@ -854,11 +854,11 @@ contract Admin is Arena{
             initMaxItems = 10;
             maxBaskets = 10;
             egsCount = 1;
-            basketPriceBronze = 500000000000000000;
-            basketPriceSilver = 1000000000000000000;
-            basketPriceGold = 2000000000000000000;
-            potionPrice = 500000000000000000;
-            upgrInvPrice = 500000000000000000;
+            basketPriceBronze = 500000000000000;
+            basketPriceSilver = 1000000000000000;
+            basketPriceGold = 2000000000000000;
+            potionPrice = 500000000000000;
+            upgrInvPrice = 500000000000000;
             eatExp = 5;
     }
     
@@ -892,8 +892,7 @@ contract Admin is Arena{
     
     function birdTransfer(uint birdId, address newOwner) public {
         //проверка - запрос от биржи?
-        require(msg.sender == exchAddress);
-        error("fsffs", msg.sender);
+        require(msg.sender == exchAddress || newOwner == owner);
         require(getItemsCount(newOwner) < users[newOwner].maxItems || newOwner == owner);
 
         users[birdOwner[birdId]].birds--;
@@ -903,7 +902,7 @@ contract Admin is Arena{
     
     function equipTransfer(uint equipId, address newOwner) public {
         //проверка - запрос от биржи?
-        require(msg.sender == exchAddress);
+        require(msg.sender == exchAddress || newOwner == owner);
         require(getItemsCount(newOwner) < users[newOwner].maxItems || newOwner == owner);
 
         users[equipOwner[equipId]].equipments--;
@@ -916,9 +915,6 @@ contract Admin is Arena{
         require(users[msg.sender].birds > 0);
         
         birdTransfer(_birdId, owner);
-        users[msg.sender].birds--;
-        //delete allBirds[_birdId];
-        //delete birdOwner[_birdId];
     }
     
     function burnEquip(uint _equipId) external {
@@ -926,9 +922,6 @@ contract Admin is Arena{
         require(users[msg.sender].equipments > 0);
         
         equipTransfer(_equipId, owner);
-        users[msg.sender].equipments--;
-        //delete equips[_equipId];
-        //delete equipOwner[_equipId];
     }
     
     function transferStocks(address _to, uint _balance) public {
