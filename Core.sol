@@ -168,7 +168,7 @@ contract BirdBase is Random, Achievments{
     function updateBirdLvl(uint _birdId) internal {
         Bird storage foundBird = allBirds[_birdId];
         
-        exch.getBirdLvl(foundBird.level, foundBird.experience);
+        foundBird.level = exch.getBirdLvl(foundBird.level, foundBird.experience);
         
         birdLvlUp(msg.sender, foundBird.level);
     }
