@@ -211,7 +211,7 @@ contract Exchange{
             refer.transfer(referProfit);
         }
         
-        coreAddress.send(profit-referProfit);
+        coreAddress.send(this.balance);
     }
     
     function acceptBirdOrder(uint birdId) public payable {
