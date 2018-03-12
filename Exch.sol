@@ -99,7 +99,7 @@ contract Exchange{
     }
     
     function getBirdLvl(uint _level, uint _exp) public constant returns(uint) {
-        for (uint i = _level; i < lvlTable.length; i++) {
+        for (uint i = _level-1; i < lvlTable.length; i++) {
             if (_exp >= lvlTable[i] && _exp < lvlTable[i+1]) {
                 return i+1;
             }
@@ -108,12 +108,13 @@ contract Exchange{
     
     function addNewOrder(uint _type ,uint _spec, uint _price) public {
         Order memory _ord;
+        require(_price > 0);
         // продажа птицы
         if (_type == 0){
             require(bird.getUserByBirdId(_spec) == msg.sender);
             require(!isBirdOnExch(_spec));
             
-           _ord = Order({
+            _ord = Order({
                 id: birdOrderIndex,
                 spec: _spec,
                 price: _price,
@@ -211,7 +212,7 @@ contract Exchange{
             refer.transfer(referProfit);
         }
         
-        coreAddress.send(this.balance);
+        coreAddress.send(profit-referProfit);
     }
     
     function acceptBirdOrder(uint birdId) public payable {
@@ -225,9 +226,9 @@ contract Exchange{
         exchangeSells(msg.sender, ++userSells[to]);
         exchangePurchases(msg.sender, ++userPurchases[msg.sender]);
         
-        delete birdOrderId[birdId];
-        //delete birdOrders[birdOrderId[birdId].id];
         delBirdOrder(birdOrderId[birdId].id);
+        delete birdOrderId[birdId];
+        //delete birdOrders[birdOrderId[birdId].id];;
     }
     
     function acceptEquipOrder(uint equipId) public payable {
@@ -241,9 +242,9 @@ contract Exchange{
         exchangeSells(msg.sender, ++userSells[to]);
         exchangePurchases(msg.sender,++userPurchases[msg.sender]);
         
+        delEquipOrder(equipOrderId[equipId].id);
         delete equipOrderId[equipId];
         //delete equipOrders[equipOrderId[equipId].id];
-        delEquipOrder(equipOrderId[equipId].id);
     }
     
     function delBirdOrder(uint i) private {
