@@ -220,7 +220,6 @@ contract BirdBase is Random, Achievments{
 }
 
 contract User is BirdBase {
-    uint eatTime;
     uint initMaxItems;
     uint maxBaskets;
     uint egsCount;
@@ -239,7 +238,7 @@ contract User is BirdBase {
         //INVENTORY
         uint birds;
         uint equipments;
-        //uint eats;
+        uint eats;
         uint baskets_bronze;
         uint baskets_silver;
         uint baskets_gold;
@@ -264,6 +263,8 @@ contract User is BirdBase {
             users[msg.sender].refer = refer;
             users[msg.sender].regDate = now;
             
+            users[msg.sender].eats = 0;
+            //users[msg.sender].eats = setEat(0);
             users[msg.sender].baskets_bronze = 0;
             users[msg.sender].baskets_silver = 0;
             users[msg.sender].baskets_gold = 0;
@@ -356,7 +357,7 @@ contract User is BirdBase {
         
         return userData.birds + 
             userData.equipments + 
-            getEat(_user) + 
+            userData.eats + 
             userData.baskets_bronze + 
             userData.baskets_silver +
             userData.baskets_gold +
@@ -375,19 +376,16 @@ contract User is BirdBase {
         return userIndex;
     }
     
-    function getEat(address _user) public constant returns(uint){
-        uint _daily = (now-users[_user].regDate)/eatTime;
-        uint _itemsCount = users[_user].birds + 
-            users[_user].equipments + 
-            users[_user].baskets_bronze + 
-            users[_user].baskets_silver +
-            users[_user].baskets_gold +
-            users[_user].potions;
+    function getEat(address _user) internal returns(uint){
+        uint _daily = (now-users[_user].regDate)/86400;
+        users[_user].regDate = now;
         
-        if (users[_user].maxItems >= (_itemsCount + _daily))
-            return _daily;
+        if (users[_user].maxItems >= (getItemsCount(_user) + _daily))
+            users[_user].eats = _daily + users[_user].eats;
         else
-            return users[_user].maxItems - _itemsCount;
+            users[_user].eats = users[_user].eats + users[_user].maxItems - getItemsCount(_user);
+            
+        return users[_user].eats;
     }
     
     function upgradeInventory () external payable {
@@ -504,7 +502,7 @@ contract User is BirdBase {
         UserData.equipments++;
             
         //выпала еда
-        UserData.regDate = now - (getEat(msg.sender)+1)*eatTime;
+        UserData.eats++;
         
         OpenBasket(msg.sender);
     }
@@ -515,7 +513,12 @@ contract User is BirdBase {
         require(getEat(msg.sender) >= _count);
         
         allBirds[_birdId].experience += _count * eatExp;
-        users[msg.sender].regDate = now-(getEat(msg.sender)-_count)*eatTime;
+        
+        if (users[msg.sender].eats > 0) {
+            users[msg.sender].eats -= _count;
+        } else {
+            users[msg.sender].regDate -= 86400 * _count;
+        }
         
         updateBirdLvl(_birdId);
     }
@@ -540,25 +543,29 @@ contract User is BirdBase {
     
     function burn(uint _type) {
         if (_type == 0) {
-            if (getEat(msg.sender) > 0){
-                users[msg.sender].regDate = now - (getEat(msg.sender)-1)*eatTime; 
+            require(getEat(msg.sender) > 0);
+            
+            if (users[msg.sender].eats > 0) {
+                users[msg.sender].eats--;
+            } else {
+                users[msg.sender].regDate -= 86400;
             }
         }
         if (_type == 1) {
-            if (users[msg.sender].baskets_bronze > 0)
-                users[msg.sender].baskets_bronze--;
+            require(users[msg.sender].baskets_bronze > 0);
+            users[msg.sender].baskets_bronze--;
         }
         if (_type == 2) {
-            if (users[msg.sender].baskets_silver > 0)
-                users[msg.sender].baskets_silver--;
+            require(users[msg.sender].baskets_silver > 0);
+            users[msg.sender].baskets_silver--;
         }
         if (_type == 3) {
-            if (users[msg.sender].baskets_gold > 0)
-                users[msg.sender].baskets_gold--;
+            require(users[msg.sender].baskets_gold > 0);
+            users[msg.sender].baskets_gold--;
         }
         if (_type == 4) {
-            if (users[msg.sender].potions > 0)
-                users[msg.sender].potions--;
+            require(users[msg.sender].potions > 0);
+            users[msg.sender].potions--;
         }
     }
     
@@ -802,7 +809,6 @@ contract Admin is Arena{
             basketPriceSilver = 1000000000000000;
             basketPriceGold = 2000000000000000;
             potionPrice = 500000000000000;
-            eatTime = 30 seconds;
             upgrInvPrice = 500000000000000;
             eatExp = 5;
     }
