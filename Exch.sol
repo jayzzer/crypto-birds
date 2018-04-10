@@ -78,6 +78,7 @@ contract Exchange{
         uint price;
         uint date;
         address seils;
+        address receiver;
     }
     
     function Exchange(address _core) public {
@@ -106,7 +107,7 @@ contract Exchange{
         }
     }
     
-    function addNewOrder(uint _type ,uint _spec, uint _price) public {
+    function addNewOrder(uint _type ,uint _spec, uint _price, address _receiver) public {
         Order memory _ord;
         require(_price > 0);
         // продажа птицы
@@ -119,6 +120,7 @@ contract Exchange{
                 spec: _spec,
                 price: _price,
                 seils: msg.sender,
+                receiver: _receiver,
                 date: now
             });
             birdOrders.push(_ord);
@@ -136,6 +138,7 @@ contract Exchange{
                 spec: _spec,
                 price: _price,
                 seils: msg.sender,
+                receiver: _receiver,
                 date: now
             });
             equipOrders.push(_ord);
@@ -177,12 +180,12 @@ contract Exchange{
         return (birdOrderId[birdId].seils, birdOrderId[birdId].price, birdOrderId[birdId].date);
     }
     
-    function getByBirdOrdeId(uint index) public constant returns(address seils, uint price, uint date, uint spec) {
-        return (birdOrders[index].seils, birdOrders[index].price, birdOrders[index].date, birdOrders[index].spec);
+    function getByBirdOrdeId(uint index) public constant returns(address seils, uint price, uint date, uint spec, address receiver) {
+        return (birdOrders[index].seils, birdOrders[index].price, birdOrders[index].date, birdOrders[index].spec, birdOrders[index].receiver);
     }
     
-    function getByEquipOrderId(uint index) public constant returns(address seils, uint price, uint date, uint spec) {
-        return (equipOrders[index].seils, equipOrders[index].price, equipOrders[index].date, equipOrders[index].spec);
+    function getByEquipOrderId(uint index) public constant returns(address seils, uint price, uint date, uint spec, address receiver) {
+        return (equipOrders[index].seils, equipOrders[index].price, equipOrders[index].date, equipOrders[index].spec, equipOrders[index].receiver);
     }
     
     function getOrdersLength() public constant returns(uint) {
@@ -218,6 +221,10 @@ contract Exchange{
     function acceptBirdOrder(uint birdId) public payable {
         require(msg.value >= birdOrderId[birdId].price);
         
+        if (birdOrderId[birdId].receiver != address(0)) {
+            require(msg.sender == birdOrderId[birdId].receiver);
+        }
+        
         address to = bird.getUserByBirdId(birdId);
         payForItem(to, msg.value);
         
@@ -233,6 +240,10 @@ contract Exchange{
     
     function acceptEquipOrder(uint equipId) public payable {
         require(msg.value >= equipOrderId[equipId].price);
+        
+        if (birdOrderId[birdId].receiver != address(0)) {
+            require(msg.sender == birdOrderId[birdId].receiver);
+        }
         
         address to = bird.getUserByEquipId(equipId);
         payForItem(to, msg.value);
