@@ -241,8 +241,8 @@ contract Exchange{
     function acceptEquipOrder(uint equipId) public payable {
         require(msg.value >= equipOrderId[equipId].price);
         
-        if (birdOrderId[birdId].receiver != address(0)) {
-            require(msg.sender == birdOrderId[birdId].receiver);
+        if (equipOrderId[equipId].receiver != address(0)) {
+            require(msg.sender == equipOrderId[equipId].receiver);
         }
         
         address to = bird.getUserByEquipId(equipId);
